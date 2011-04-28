@@ -23,8 +23,7 @@ import Text.Blaze.Html5 (docTypeHtml, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import Text.Blaze.Renderer.Pretty
-import Text.ParserCombinators.Parsec (parse, ParseError)
-import qualified Data.ByteString.Lazy as BS
+import Text.ParserCombinators.Parsec (ParseError)
 import System.Exit (exitFailure)
 import Control.Monad (forM_)
 import Text.Parsec (runParserT)

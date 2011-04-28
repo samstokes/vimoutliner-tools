@@ -23,7 +23,6 @@ import Control.Applicative hiding (many)
 import Text.Parsec
 import Text.Parsec.String
 import Text.Parsec.Indent
-import Debug.Trace
 
 
 {- REPRESENTATION -}
@@ -38,18 +37,12 @@ data ItemContent = TextContent String
   deriving (Show)
 
 
-{- PARSER STATE -}
 
-data ParserState = ParserState {
-                       getParserIndentation :: Int
-                   }
-initialState :: ParserState
-initialState = ParserState { getParserIndentation = 0 }
+{- PARSER -}
 
 type ParserT a = IndentParser String () a
 
 
-{- PARSER -}
 
 parser :: ParserT Outline
 parser = outlineP
