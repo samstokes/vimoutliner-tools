@@ -51,6 +51,9 @@ htmlOutline (Outline items) = docTypeHtml $ do
         H.div ! A.class_ "MainPage" $ do
             forM_ items (H.p . renderItem 1)
         H.div ! A.class_ "Footer" $ "Insert footer here"
+    H.preEscapedString "<!--"
+    H.preEscapedString $ show items
+    H.preEscapedString "-->"
 
 stylesheet url = H.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href url
 
