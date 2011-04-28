@@ -17,10 +17,11 @@ module OTL (
   , Item(..)
   , ItemContent(..)
   , parser
+  , parse
 ) where
 
 import Control.Applicative hiding (many)
-import Text.Parsec
+import Text.Parsec hiding (parse)
 import Text.Parsec.String
 import Text.Parsec.Indent
 
@@ -43,6 +44,8 @@ data ItemContent = TextContent String
 type ParserT a = IndentParser String () a
 
 
+parse :: SourceName -> String -> Either ParseError Outline
+parse sourceName = runIndent sourceName . runParserT parser () sourceName
 
 parser :: ParserT Outline
 parser = outlineP

@@ -26,13 +26,11 @@ import Text.Blaze.Renderer.Pretty
 import Text.ParserCombinators.Parsec (ParseError)
 import System.Exit (exitFailure)
 import Control.Monad (forM_)
-import Text.Parsec (runParserT)
-import Text.Parsec.Indent (runIndent)
 
 main :: IO ()
 main = do
   stdin <- getContents
-  handleParse $ runIndent "<stdin>" $ runParserT parser () "<stdin>" stdin
+  handleParse $ parse "<stdin>" stdin
 
 handleParse :: Either ParseError Outline -> IO ()
 handleParse (Left err) = print err >> exitFailure
