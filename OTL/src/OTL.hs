@@ -28,13 +28,15 @@ import Text.Parsec.Indent
 
 {- REPRESENTATION -}
 
-newtype Outline = Outline [Item]
+newtype Outline = Outline { getOutlineItems :: [Item] }
   deriving (Show)
 
-data Item = Item ItemContent [Item]
+data Item = Item { getItemContent :: ItemContent
+                 , getItemChildren :: [Item]
+                 }
   deriving (Show)
 
-data ItemContent = TextContent String
+data ItemContent = TextContent { getText :: String }
   deriving (Show)
 
 
