@@ -20,7 +20,7 @@ module OTL (
   , parse
 ) where
 
-import Control.Applicative hiding (many)
+import Control.Applicative hiding (many, (<|>))
 import Text.Parsec hiding (parse)
 import Text.Parsec.String
 import Text.Parsec.Indent
@@ -37,6 +37,8 @@ data Item = Item { getItemContent :: ItemContent
   deriving (Show)
 
 data ItemContent = TextContent { getText :: String }
+                 | BodyContent { getBodyParagraphs :: [String] }
+                 | PreformattedContent { getPreformattedContent :: String }
   deriving (Show)
 
 
@@ -59,4 +61,39 @@ itemP :: ParserT Item
 itemP = withBlock Item (itemContentP <* spaces) itemP
 
 itemContentP :: ParserT ItemContent
-itemContentP = TextContent <$> many1 (noneOf "\n") <* newline
+itemContentP = bodyContentP
+           <|> preformattedContentP
+           <|> textContentP
+
+textContentP :: ParserT ItemContent
+textContentP = TextContent <$> many1 (noneOf "\n") <* newline
+
+bodyContentP :: ParserT ItemContent
+bodyContentP = BodyContent <$> paragraphs
+    where
+    paragraphs = colonLines >>= return . unlinesSplitByBlanks
+    colonLines = block $ do
+    char ':'
+    line <- many (noneOf "\n")
+    newline >> spaces
+    return line
+
+unlinesSplitByBlanks :: [String] -> [String]
+unlinesSplitByBlanks = map unlines . splitBy null
+
+splitBy :: (a -> Bool) -> [a] -> [[a]]
+splitBy p = foldr addUnlessP []
+    where
+    addUnlessP item groups | p item = [] : groups
+    addUnlessP item [] = [[item]]
+    addUnlessP item (group : groups) = (item : group) : groups
+
+preformattedContentP :: ParserT ItemContent
+preformattedContentP = PreformattedContent <$> content
+    where
+    content = semicolonLines >>= return . unlines
+    semicolonLines = block $ do
+    char ';'
+    line <- many (noneOf "\n")
+    newline >> spaces
+    return line

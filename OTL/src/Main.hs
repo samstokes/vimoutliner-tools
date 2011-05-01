@@ -71,3 +71,5 @@ renderItem depth (Item content items) = do
 
 renderItemContent :: ItemContent -> H.Html
 renderItemContent (TextContent text) = H.toHtml text
+renderItemContent (BodyContent paragraphs) = forM_ paragraphs (H.p . H.toHtml)
+renderItemContent (PreformattedContent content) = H.pre $ H.toHtml content
