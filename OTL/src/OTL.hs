@@ -66,7 +66,7 @@ itemContentP = bodyContentP
            <|> textContentP
 
 textContentP :: ParserT ItemContent
-textContentP = TextContent <$> many1 (noneOf "\n") <* newline
+textContentP = TextContent <$> nonEmptyLineP <* newline
 
 bodyContentP :: ParserT ItemContent
 bodyContentP = BodyContent <$> paragraphs
@@ -74,7 +74,7 @@ bodyContentP = BodyContent <$> paragraphs
     paragraphs = colonLines >>= return . unlinesSplitByBlanks
     colonLines = block $ do
     char ':'
-    line <- many (noneOf "\n")
+    line <- lineP
     newline >> spaces
     return line
 
@@ -94,6 +94,15 @@ preformattedContentP = PreformattedContent <$> content
     content = semicolonLines >>= return . unlines
     semicolonLines = block $ do
     char ';'
-    line <- many (noneOf "\n")
+    line <- lineP
     newline >> spaces
     return line
+
+lineP :: ParserT String
+lineP = many lineCharP
+
+nonEmptyLineP :: ParserT String
+nonEmptyLineP = many1 lineCharP
+
+lineCharP :: ParserT Char
+lineCharP = noneOf "\n"
