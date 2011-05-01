@@ -22,8 +22,9 @@ import OTL
 import Text.Blaze.Html5 (docTypeHtml, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
-import Text.Blaze.Renderer.Pretty
+import Text.Blaze.Renderer.Utf8
 import Text.ParserCombinators.Parsec (ParseError)
+import qualified Data.ByteString.Lazy as BS
 import System.Exit (exitFailure)
 import Control.Monad (forM_)
 
@@ -37,7 +38,7 @@ handleParse (Left err) = print err >> exitFailure
 handleParse (Right outline) = printHtml outline
 
 printHtml :: Outline -> IO ()
-printHtml outline = putStrLn $ renderHtml $ htmlOutline outline
+printHtml outline = BS.putStrLn $ renderHtml $ htmlOutline outline
 
 htmlOutline :: Outline -> H.Html
 htmlOutline (Outline items) = docTypeHtml $ do
