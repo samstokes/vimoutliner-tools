@@ -69,14 +69,7 @@ textContentP :: ParserT ItemContent
 textContentP = TextContent <$> nonEmptyLineP <* newline
 
 bodyContentP :: ParserT ItemContent
-bodyContentP = BodyContent <$> paragraphs
-    where
-    paragraphs = colonLines >>= return . unlinesSplitByBlanks
-    colonLines = block $ do
-    char ':'
-    line <- lineP
-    newline >> spaces
-    return line
+bodyContentP = (BodyContent . unlinesSplitByBlanks) <$> nonHeadingP ':'
 
 unlinesSplitByBlanks :: [String] -> [String]
 unlinesSplitByBlanks = map unlines . splitBy null
@@ -89,14 +82,10 @@ splitBy p = foldr addUnlessP []
     addUnlessP item (group : groups) = (item : group) : groups
 
 preformattedContentP :: ParserT ItemContent
-preformattedContentP = PreformattedContent <$> content
-    where
-    content = semicolonLines >>= return . unlines
-    semicolonLines = block $ do
-    char ';'
-    line <- lineP
-    newline >> spaces
-    return line
+preformattedContentP = (PreformattedContent . unlines) <$> nonHeadingP ';'
+
+nonHeadingP :: Char -> ParserT [String]
+nonHeadingP startChar = block (char startChar *> lineP <* newline <* spaces)
 
 lineP :: ParserT String
 lineP = many lineCharP
