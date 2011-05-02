@@ -73,6 +73,8 @@ renderItemContent depth (Body paragraphs) = forM_ paragraphs $ renderParagraph d
 renderItemContent depth (Preformatted content) = H.pre ! depthClass depth "PRE" $ H.toHtml content
 renderItemContent depth (Table rows) = H.table ! depthClass depth "TAB" $ do
     H.tbody $ forM_ rows renderTableRow
+renderItemContent depth (UserDef type_ lines) = H.pre ! A.title (H.toValue $ show type_) $ H.toHtml $ unlines lines
+renderItemContent depth (PreUserDef type_ content) = H.pre ! A.title (H.toValue $ show type_) $ H.toHtml content
 
 renderParagraph :: Int -> String -> H.Html
 renderParagraph depth = (H.p ! depthClass depth "P") . H.toHtml

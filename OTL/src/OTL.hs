@@ -26,6 +26,7 @@ import Text.Parsec hiding (parse)
 import qualified Text.Parsec as Parsec
 import Text.Parsec.String
 import Text.Parsec.Indent
+import Data.Char (isSpace)
 
 
 {- REPRESENTATION -}
@@ -42,6 +43,12 @@ data ItemContent = Heading { getHeading :: String }
                  | Body { getBodyParagraphs :: [String] }
                  | Preformatted { getPreformattedContent :: String }
                  | Table { getTableRows :: [TableRow] }
+                 | UserDef { getUserDefType :: Maybe String
+                           , getBodyLines :: [String]
+                           }
+                 | PreUserDef { getUserDefType :: Maybe String
+                              , getPreformattedContent :: String
+                              }
   deriving (Show)
 
 data TableRow = TableRow { isRowHeader :: Bool
@@ -72,6 +79,8 @@ itemContentP :: ParserT ItemContent
 itemContentP = bodyP
            <|> preformattedP
            <|> tableP
+           <|> userDefP
+           <|> preUserDefP
            <|> headingP
 
 headingP :: ParserT ItemContent
@@ -95,6 +104,18 @@ preformattedP = (Preformatted . unlines) <$> nonHeadingP ';'
 
 tableP :: ParserT ItemContent
 tableP = (Table . map parseTableRow) <$> nonHeadingP '|'
+
+userDefP :: ParserT ItemContent
+userDefP = makeUserDef <$> nonHeadingP '>'
+    where
+    makeUserDef (defn : rest) | not (isSpace (head defn)) = UserDef (Just defn) rest
+    makeUserDef textLines = UserDef Nothing textLines
+
+preUserDefP :: ParserT ItemContent
+preUserDefP = makePreUserDef <$> nonHeadingP '<'
+    where
+    makePreUserDef (defn : rest) | not (isSpace (head defn)) = PreUserDef (Just defn) $ unlines rest
+    makePreUserDef textLines = PreUserDef Nothing $ unlines textLines
 
 parseTableRow :: String -> TableRow
 parseTableRow line = case Parsec.parse tableRowP "table row" line of
