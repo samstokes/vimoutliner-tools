@@ -36,9 +36,9 @@ data Item = Item { getItemContent :: ItemContent
                  }
   deriving (Show)
 
-data ItemContent = TextContent { getText :: String }
-                 | BodyContent { getBodyParagraphs :: [String] }
-                 | PreformattedContent { getPreformattedContent :: String }
+data ItemContent = Heading { getHeading :: String }
+                 | Body { getBodyParagraphs :: [String] }
+                 | Preformatted { getPreformattedContent :: String }
   deriving (Show)
 
 
@@ -61,15 +61,15 @@ itemP :: ParserT Item
 itemP = withBlock Item (itemContentP <* spaces) itemP
 
 itemContentP :: ParserT ItemContent
-itemContentP = bodyContentP
-           <|> preformattedContentP
-           <|> textContentP
+itemContentP = bodyP
+           <|> preformattedP
+           <|> headingP
 
-textContentP :: ParserT ItemContent
-textContentP = TextContent <$> nonEmptyLineP <* newline
+headingP :: ParserT ItemContent
+headingP = Heading <$> nonEmptyLineP <* newline
 
-bodyContentP :: ParserT ItemContent
-bodyContentP = (BodyContent . unlinesSplitByBlanks) <$> nonHeadingP ':'
+bodyP :: ParserT ItemContent
+bodyP = (Body . unlinesSplitByBlanks) <$> nonHeadingP ':'
 
 unlinesSplitByBlanks :: [String] -> [String]
 unlinesSplitByBlanks = map unlines . splitBy null
@@ -81,8 +81,8 @@ splitBy p = foldr addUnlessP []
     addUnlessP item [] = [[item]]
     addUnlessP item (group : groups) = (item : group) : groups
 
-preformattedContentP :: ParserT ItemContent
-preformattedContentP = (PreformattedContent . unlines) <$> nonHeadingP ';'
+preformattedP :: ParserT ItemContent
+preformattedP = (Preformatted . unlines) <$> nonHeadingP ';'
 
 nonHeadingP :: Char -> ParserT [String]
 nonHeadingP startChar = block (char startChar *> lineP <* newline <* spaces)

@@ -42,7 +42,7 @@ printHtml outline = BS.putStrLn $ renderHtml $ htmlOutline outline
 
 htmlOutline :: Outline -> H.Html
 htmlOutline (Outline (titleItem : items)) = docTypeHtml $ do
-    let (Item (TextContent title) titleChildren) = titleItem
+    let (Item (Heading title) titleChildren) = titleItem
     H.head $ do
         H.title $ H.toHtml title
         stylesheet "style.css"
@@ -70,6 +70,6 @@ renderItem depth (Item content items) = do
         liClass = H.toValue $ "L" ++ show depth
 
 renderItemContent :: ItemContent -> H.Html
-renderItemContent (TextContent text) = H.toHtml text
-renderItemContent (BodyContent paragraphs) = forM_ paragraphs (H.p . H.toHtml)
-renderItemContent (PreformattedContent content) = H.pre $ H.toHtml content
+renderItemContent (Heading text) = H.toHtml text
+renderItemContent (Body paragraphs) = forM_ paragraphs (H.p . H.toHtml)
+renderItemContent (Preformatted content) = H.pre $ H.toHtml content
