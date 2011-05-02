@@ -44,7 +44,7 @@ data ItemContent = Heading { getHeading :: String }
                  | Preformatted { getPreformattedContent :: String }
                  | Table { getTableRows :: [TableRow] }
                  | UserDef { getUserDefType :: Maybe String
-                           , getBodyLines :: [String]
+                           , getUserDefContent :: String
                            }
                  | PreUserDef { getUserDefType :: Maybe String
                               , getPreformattedContent :: String
@@ -110,7 +110,7 @@ userDefP = makeUserDef <$> nonHeadingP '>'
     where
     makeUserDef (defn : rest) | not (isSpace (head defn)) = UserDef (Just defn) (mungeBody rest)
     makeUserDef textLines = UserDef Nothing (mungeBody textLines)
-    mungeBody = map lstrip1
+    mungeBody = unlines . map lstrip1
 
 preUserDefP :: ParserT ItemContent
 preUserDefP = makePreUserDef <$> nonHeadingP '<'

@@ -75,12 +75,12 @@ renderItemContent depth (Body paragraphs) = forM_ paragraphs $ renderParagraph d
 renderItemContent depth (Preformatted content) = H.pre ! depthClass depth "PRE" $ H.toHtml content
 renderItemContent depth (Table rows) = H.table ! depthClass depth "TAB" $ do
     H.tbody $ forM_ rows renderTableRow
-renderItemContent depth (UserDef type_ lines) = case getReader of
+renderItemContent depth (UserDef type_ content) = case getReader of
     Just reader -> H.preEscapedString $ writer pandoc
         where
         writer = Pandoc.writeHtmlString Pandoc.defaultWriterOptions
-        pandoc = reader Pandoc.defaultParserState $ unlines lines
-    Nothing -> H.pre ! A.title (H.toValue $ show type_) $ H.toHtml $ unlines lines
+        pandoc = reader Pandoc.defaultParserState content
+    Nothing -> H.pre ! A.title (H.toValue $ show type_) $ H.toHtml content
     where getReader = do -- Maybe monad
             type_' <- type_
             lookup (map toLower type_') Pandoc.readers
