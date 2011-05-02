@@ -62,14 +62,18 @@ stylesheet url = H.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href url
 
 renderItem :: Int -> Item -> H.Html
 renderItem depth (Item content items) = do
-    H.li ! A.class_ liClass $ do
-        renderItemContent content
+    H.li ! depthClass depth "L" $ do
+        renderItemContent depth content
         unless (null items) $ H.ol $ do
             forM_ items $ renderItem (succ depth)
-    where
-        liClass = H.toValue $ "L" ++ show depth
 
-renderItemContent :: ItemContent -> H.Html
-renderItemContent (Heading text) = H.toHtml text
-renderItemContent (Body paragraphs) = forM_ paragraphs (H.p . H.toHtml)
-renderItemContent (Preformatted content) = H.pre $ H.toHtml content
+renderItemContent :: Int -> ItemContent -> H.Html
+renderItemContent _ (Heading text) = H.toHtml text
+renderItemContent depth (Body paragraphs) = forM_ paragraphs $ renderParagraph depth
+renderItemContent depth (Preformatted content) = H.pre ! depthClass depth "PRE" $ H.toHtml content
+
+renderParagraph :: Int -> String -> H.Html
+renderParagraph depth = (H.p ! depthClass depth "P") . H.toHtml
+
+depthClass :: Int -> String -> H.Attribute
+depthClass depth label = A.class_ $ H.toValue $ label ++ show depth
