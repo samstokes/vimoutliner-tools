@@ -13,13 +13,11 @@
 -----------------------------------------------------------------------------
 
 module OTL (
-    Outline(..)
-  , Item(..)
-  , ItemContent(..)
-  , TableRow(..)
-  , parser
+    parser
   , parse
 ) where
+
+import Text.OTL.Types
 
 import Control.Applicative hiding (many, (<|>))
 import Text.Parsec hiding (parse)
@@ -27,35 +25,6 @@ import qualified Text.Parsec as Parsec
 import Text.Parsec.String
 import Text.Parsec.Indent
 import Data.Char (isSpace)
-
-
-{- REPRESENTATION -}
-
-newtype Outline = Outline { getOutlineItems :: [Item] }
-  deriving (Show)
-
-data Item = Item { getItemContent :: ItemContent
-                 , getItemChildren :: [Item]
-                 }
-  deriving (Show)
-
-data ItemContent = Heading { getHeading :: String }
-                 | Body { getBodyParagraphs :: [String] }
-                 | Preformatted { getPreformattedContent :: String }
-                 | Table { getTableRows :: [TableRow] }
-                 | UserDef { getUserDefType :: Maybe String
-                           , getUserDefContent :: String
-                           }
-                 | PreUserDef { getUserDefType :: Maybe String
-                              , getPreformattedContent :: String
-                              }
-  deriving (Show)
-
-data TableRow = TableRow { isRowHeader :: Bool
-                         , getRowEntries :: [String]
-                         }
-  deriving (Show)
-
 
 
 {- PARSER -}
