@@ -93,5 +93,5 @@ lineP = many lineCharP
 nonEmptyLineP :: ParserT String
 nonEmptyLineP = many1 lineCharP
 
-lineCharP :: ParserT Char
+lineCharP :: Monad m => ParsecT String u m Char
 lineCharP = noneOf "\n"
