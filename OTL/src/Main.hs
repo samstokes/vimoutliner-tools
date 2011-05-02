@@ -71,9 +71,17 @@ renderItemContent :: Int -> ItemContent -> H.Html
 renderItemContent _ (Heading text) = H.toHtml text
 renderItemContent depth (Body paragraphs) = forM_ paragraphs $ renderParagraph depth
 renderItemContent depth (Preformatted content) = H.pre ! depthClass depth "PRE" $ H.toHtml content
+renderItemContent depth (Table rows) = H.table ! depthClass depth "TAB" $ do
+    H.tbody $ forM_ rows renderTableRow
 
 renderParagraph :: Int -> String -> H.Html
 renderParagraph depth = (H.p ! depthClass depth "P") . H.toHtml
+
+renderTableRow :: TableRow -> H.Html
+renderTableRow (TableRow isHeader entries) = H.tr $ forM_ entries renderEntry
+    where
+    renderEntry = entryTag . H.toHtml
+    entryTag = if isHeader then H.th else H.td
 
 depthClass :: Int -> String -> H.Attribute
 depthClass depth label = A.class_ $ H.toValue $ label ++ show depth

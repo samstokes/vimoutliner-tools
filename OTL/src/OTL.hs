@@ -16,12 +16,14 @@ module OTL (
     Outline(..)
   , Item(..)
   , ItemContent(..)
+  , TableRow(..)
   , parser
   , parse
 ) where
 
 import Control.Applicative hiding (many, (<|>))
 import Text.Parsec hiding (parse)
+import qualified Text.Parsec as Parsec
 import Text.Parsec.String
 import Text.Parsec.Indent
 
@@ -39,6 +41,12 @@ data Item = Item { getItemContent :: ItemContent
 data ItemContent = Heading { getHeading :: String }
                  | Body { getBodyParagraphs :: [String] }
                  | Preformatted { getPreformattedContent :: String }
+                 | Table { getTableRows :: [TableRow] }
+  deriving (Show)
+
+data TableRow = TableRow { isRowHeader :: Bool
+                         , getRowEntries :: [String]
+                         }
   deriving (Show)
 
 
@@ -63,6 +71,7 @@ itemP = withBlock Item (itemContentP <* spaces) itemP
 itemContentP :: ParserT ItemContent
 itemContentP = bodyP
            <|> preformattedP
+           <|> tableP
            <|> headingP
 
 headingP :: ParserT ItemContent
@@ -84,6 +93,21 @@ splitBy p = foldr addUnlessP []
 preformattedP :: ParserT ItemContent
 preformattedP = (Preformatted . unlines) <$> nonHeadingP ';'
 
+tableP :: ParserT ItemContent
+tableP = (Table . map parseTableRow) <$> nonHeadingP '|'
+
+parseTableRow :: String -> TableRow
+parseTableRow line = case Parsec.parse tableRowP "table row" line of
+    Right row -> row
+    Left err -> error $ "couldn't parse table row (" ++ line ++ "): " ++ show err
+
+tableRowP :: Parsec String () TableRow
+tableRowP = TableRow <$> isHeadingP <*> entriesP
+    where
+    isHeadingP = presence $ char '|'
+    entriesP = sepEndBy1 (spaced $ many1 tableEntryCharP) (char '|')
+
+
 nonHeadingP :: Char -> ParserT [String]
 nonHeadingP startChar = block (char startChar *> lineP <* newline <* spaces)
 
@@ -95,3 +119,12 @@ nonEmptyLineP = many1 lineCharP
 
 lineCharP :: Monad m => ParsecT String u m Char
 lineCharP = noneOf "\n"
+
+tableEntryCharP :: Monad m => ParsecT String u m Char
+tableEntryCharP = noneOf "|\n"
+
+presence :: ParsecT s u m a -> ParsecT s u m Bool
+presence p = (p *> return True) <|> return False
+
+spaced :: Monad m => ParsecT String u m a -> ParsecT String u m a
+spaced p = spaces *> p <* spaces
