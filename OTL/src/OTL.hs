@@ -108,8 +108,9 @@ tableP = (Table . map parseTableRow) <$> nonHeadingP '|'
 userDefP :: ParserT ItemContent
 userDefP = makeUserDef <$> nonHeadingP '>'
     where
-    makeUserDef (defn : rest) | not (isSpace (head defn)) = UserDef (Just defn) (map lstrip1 rest)
-    makeUserDef textLines = UserDef Nothing (map lstrip1 textLines)
+    makeUserDef (defn : rest) | not (isSpace (head defn)) = UserDef (Just defn) (mungeBody rest)
+    makeUserDef textLines = UserDef Nothing (mungeBody textLines)
+    mungeBody = map lstrip1
 
 preUserDefP :: ParserT ItemContent
 preUserDefP = makePreUserDef <$> nonHeadingP '<'
