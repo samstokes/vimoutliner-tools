@@ -17,8 +17,7 @@ module Main (
     main
 ) where
 
-import Text.OTL.Parser
-import Text.OTL.Types
+import Text.OTL
 
 import Text.Blaze.Html5 (docTypeHtml, (!))
 import qualified Text.Blaze.Html5 as H
