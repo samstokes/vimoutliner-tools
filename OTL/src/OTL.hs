@@ -108,8 +108,8 @@ tableP = (Table . map parseTableRow) <$> nonHeadingP '|'
 userDefP :: ParserT ItemContent
 userDefP = makeUserDef <$> nonHeadingP '>'
     where
-    makeUserDef (defn : rest) | not (isSpace (head defn)) = UserDef (Just defn) rest
-    makeUserDef textLines = UserDef Nothing textLines
+    makeUserDef (defn : rest) | not (isSpace (head defn)) = UserDef (Just defn) (map lstrip1 rest)
+    makeUserDef textLines = UserDef Nothing (map lstrip1 textLines)
 
 preUserDefP :: ParserT ItemContent
 preUserDefP = makePreUserDef <$> nonHeadingP '<'
@@ -149,3 +149,10 @@ presence p = (p *> return True) <|> return False
 
 spaced :: Monad m => ParsecT String u m a -> ParsecT String u m a
 spaced p = spaces *> p <* spaces
+
+lstrip1 :: String -> String
+lstrip1 = dropIf isSpace
+
+dropIf :: (Char -> Bool) -> String -> String
+dropIf p (c : cs) | p c = cs
+dropIf _ cs = cs
