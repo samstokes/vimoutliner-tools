@@ -17,7 +17,7 @@ module Main (
     main
 ) where
 
-import OTL
+import Text.OTL.Parser
 import Text.OTL.Types
 
 import Text.Blaze.Html5 (docTypeHtml, (!))

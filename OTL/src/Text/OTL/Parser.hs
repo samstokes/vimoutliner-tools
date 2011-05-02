@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 --
--- Module      :  OTL
+-- Module      :  Text.OTL.Parser
 -- Copyright   :
 -- License     :  AllRightsReserved
 --
@@ -12,10 +12,12 @@
 --
 -----------------------------------------------------------------------------
 
-module OTL (
+module Text.OTL.Parser (
     parser
   , parse
 ) where
+
+
 
 import Text.OTL.Types
 
@@ -26,8 +28,6 @@ import Text.Parsec.String
 import Text.Parsec.Indent
 import Data.Char (isSpace)
 
-
-{- PARSER -}
 
 type ParserT a = IndentParser String () a
 
