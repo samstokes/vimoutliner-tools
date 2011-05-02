@@ -7,7 +7,7 @@ license-file: ""
 copyright:
 maintainer:
 build-depends: base -any, blaze-html -any, bytestring -any,
-               indents -any, mtl -any, parsec -any
+               indents -any, mtl -any, pandoc -any, parsec -any
 stability:
 homepage:
 package-url:

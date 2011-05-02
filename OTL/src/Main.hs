@@ -27,6 +27,8 @@ import Text.ParserCombinators.Parsec (ParseError)
 import qualified Data.ByteString.Lazy as BS
 import System.Exit (exitFailure)
 import Control.Monad (unless, forM_)
+import qualified Text.Pandoc as Pandoc
+import Data.Char (toLower)
 
 main :: IO ()
 main = do
@@ -73,7 +75,15 @@ renderItemContent depth (Body paragraphs) = forM_ paragraphs $ renderParagraph d
 renderItemContent depth (Preformatted content) = H.pre ! depthClass depth "PRE" $ H.toHtml content
 renderItemContent depth (Table rows) = H.table ! depthClass depth "TAB" $ do
     H.tbody $ forM_ rows renderTableRow
-renderItemContent depth (UserDef type_ lines) = H.pre ! A.title (H.toValue $ show type_) $ H.toHtml $ unlines lines
+renderItemContent depth (UserDef type_ lines) = case getReader of
+    Just reader -> H.preEscapedString $ writer pandoc
+        where
+        writer = Pandoc.writeHtmlString Pandoc.defaultWriterOptions
+        pandoc = reader Pandoc.defaultParserState $ unlines lines
+    Nothing -> H.pre ! A.title (H.toValue $ show type_) $ H.toHtml $ unlines lines
+    where getReader = do -- Maybe monad
+            type_' <- type_
+            lookup (map toLower type_') Pandoc.readers
 renderItemContent depth (PreUserDef type_ content) = H.pre ! A.title (H.toValue $ show type_) $ H.toHtml content
 
 renderParagraph :: Int -> String -> H.Html
