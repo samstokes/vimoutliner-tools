@@ -19,6 +19,9 @@ module Text.OTL (
   , Item(..)
   , ItemContent(..)
   , TableRow(..)
+  , getOutlineTitleItem
+  , getOutlineNonTitleItems
+  , getItemTitle
 ) where
 
 

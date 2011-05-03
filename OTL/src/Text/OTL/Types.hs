@@ -17,6 +17,9 @@ module Text.OTL.Types (
   , Item(..)
   , ItemContent(..)
   , TableRow(..)
+  , getOutlineTitleItem
+  , getOutlineNonTitleItems
+  , getItemTitle
 ) where
 
 
@@ -45,3 +48,30 @@ data TableRow = TableRow { isRowHeader :: Bool
                          , getRowEntries :: [String]
                          }
   deriving (Show)
+
+
+
+{- UTILITIES -}
+
+
+getOutlineTitleItem :: Outline -> Item
+getOutlineTitleItem = fst . segregateTitle
+
+
+getOutlineNonTitleItems :: Outline -> [Item]
+getOutlineNonTitleItems = snd . segregateTitle
+
+
+segregateTitle :: Outline -> (Item, [Item])
+segregateTitle outline = case segregateTitle' outline of
+    Right items -> items
+    Left reason -> error $ "Couldn't find title item: " ++ reason
+  where
+  segregateTitle' (Outline (title@(Item (Heading _) _) : nonTitles)) = Right (title, nonTitles)
+  segregateTitle' (Outline (item : _)) = Left $ "unexpected non-heading as first item: " ++ show item
+  segregateTitle' _ = Left "empty outline!"
+
+
+getItemTitle :: Item -> String
+getItemTitle (Item (Heading heading) _) = heading
+getItemTitle item = error $ "Couldn't get title for non-heading: " ++ show item

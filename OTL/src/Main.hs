@@ -43,8 +43,9 @@ printHtml :: Outline -> IO ()
 printHtml outline = BS.putStrLn $ renderHtml $ htmlOutline outline
 
 htmlOutline :: Outline -> H.Html
-htmlOutline (Outline (titleItem : items)) = docTypeHtml $ do
-    let (Item (Heading title) titleChildren) = titleItem
+htmlOutline outline = docTypeHtml $ do
+    let titleItem = getOutlineTitleItem outline
+    let title = getItemTitle titleItem
     H.head $ do
         H.title $ H.toHtml title
         stylesheet "style.css"
@@ -53,8 +54,8 @@ htmlOutline (Outline (titleItem : items)) = docTypeHtml $ do
             H.h1 $ H.toHtml title
         H.div ! A.class_ "MainPage" $ do
             H.ol $ do
-                forM_ titleChildren $ renderItem 1
-                forM_ items $ renderItem 1
+                forM_ (getItemChildren titleItem) $ renderItem 1
+                forM_ (getOutlineNonTitleItems outline) $ renderItem 1
         H.div ! A.class_ "Footer" $ "Insert footer here"
     H.preEscapedString "<!--"
     H.preEscapedString $ show items
