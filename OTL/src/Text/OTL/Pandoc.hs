@@ -28,7 +28,7 @@ import Data.Foldable (Foldable(..))
 
 
 toPandoc :: Outline -> Pandoc
-toPandoc outline = P.setTitle outlineTitle $ P.doc $ foldMap itemToBlocks outlineItems
+toPandoc outline = P.setTitle outlineTitle $ P.doc $ P.orderedList (map itemToBlocks outlineItems)
     where outlineTitle = P.text $ getHeading (getOutlineTitleItem outline)
           outlineItems = getOutlineItems outline
 
