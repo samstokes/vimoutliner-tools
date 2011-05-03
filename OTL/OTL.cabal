@@ -6,8 +6,8 @@ license: AllRightsReserved
 license-file: ""
 copyright:
 maintainer:
-build-depends: base -any, blaze-html -any, bytestring -any,
-               indents -any, mtl -any, pandoc -any, parsec -any
+build-depends: parsec -any, pandoc-types -any, pandoc -any,
+               mtl -any, indents -any, bytestring -any, blaze-html -any, base -any
 stability:
 homepage:
 package-url:
@@ -43,7 +43,8 @@ includes:
 install-includes:
 include-dirs:
 hs-source-dirs: src
-other-modules: Text.OTL Text.OTL.Parser Text.OTL.Types
+other-modules: Text.OTL.Pandoc Text.OTL Text.OTL.Parser
+               Text.OTL.Types
 ghc-prof-options:
 ghc-shared-options:
 ghc-options:
