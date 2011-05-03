@@ -11,7 +11,7 @@
 -- |
 --
 -----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, GADTs #-}
 
 module Main (
     main
@@ -29,6 +29,22 @@ import System.Exit (exitFailure)
 import Control.Monad (unless, forM_)
 import qualified Text.Pandoc as Pandoc
 import Data.Char (toLower)
+import Control.Applicative ((<$>))
+import System.Environment (getArgs)
+
+
+data Stylesheet where
+    StylesheetRef :: String -> Stylesheet
+    StylesheetInline :: String -> Stylesheet
+
+styleTag :: Stylesheet -> H.Html
+styleTag (StylesheetRef url) = H.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href (H.toValue url)
+styleTag (StylesheetInline css) = H.style ! A.type_ "text/css" $ H.toHtml css
+
+
+defaultStylesheet :: IO Stylesheet
+defaultStylesheet = StylesheetInline <$> readFile "style.css"
+
 
 main :: IO ()
 main = do
@@ -37,18 +53,25 @@ main = do
 
 handleParse :: Either ParseError Outline -> IO ()
 handleParse (Left err) = print err >> exitFailure
-handleParse (Right outline) = printHtml outline
+handleParse (Right outline) = do
+    args <- getArgs
+    stylesheet <- case args of
+        ['+' : filepath] -> StylesheetInline <$> readFile filepath
+        [url] -> return $ StylesheetRef url
+        [] -> defaultStylesheet
+        otherwise -> error $ "Bad args: " ++ unwords args
+    printHtml stylesheet outline
 
-printHtml :: Outline -> IO ()
-printHtml outline = BS.putStrLn $ renderHtml $ htmlOutline outline
+printHtml :: Stylesheet -> Outline -> IO ()
+printHtml stylesheet outline = BS.putStrLn $ renderHtml $ htmlOutline stylesheet outline
 
-htmlOutline :: Outline -> H.Html
-htmlOutline outline = docTypeHtml $ do
+htmlOutline :: Stylesheet -> Outline -> H.Html
+htmlOutline stylesheet outline = docTypeHtml $ do
     let titleItem = getOutlineTitleItem outline
     let title = getItemTitle titleItem
     H.head $ do
         H.title $ H.toHtml title
-        stylesheet "style.css"
+        styleTag stylesheet
     H.body $ do
         H.div ! A.class_ "DocTitle" $ do
             H.h1 $ H.toHtml title
@@ -57,8 +80,6 @@ htmlOutline outline = docTypeHtml $ do
                 forM_ (getItemChildren titleItem) $ renderItem 1
                 forM_ (getOutlineNonTitleItems outline) $ renderItem 1
         H.div ! A.class_ "Footer" $ "Insert footer here"
-
-stylesheet url = H.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href url
 
 renderItem :: Int -> Item -> H.Html
 renderItem depth (Item content items) = do
