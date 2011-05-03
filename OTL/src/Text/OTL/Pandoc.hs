@@ -28,7 +28,8 @@ import Data.Foldable (Foldable(..))
 
 
 toPandoc :: Outline -> Pandoc
-toPandoc outline = P.setTitle outlineTitle $ P.doc $ P.orderedList (map itemToBlocks (titleChildren ++ nonTitleItems))
+toPandoc outline = P.setTitle outlineTitle $ P.doc $
+    foldMap (itemToBlocks 1) (titleChildren ++ nonTitleItems)
     where
       titleItem = getOutlineTitleItem outline
       outlineTitle = P.text $ getHeading titleItem
@@ -45,7 +46,12 @@ defaultWriterOptions = do
     }
 
 
-itemToBlocks :: Item -> P.Blocks
-itemToBlocks (Heading heading children) =
-    (P.plain . P.text) heading `mappend`
-    P.orderedList (map itemToBlocks children)
+itemToBlocks :: Int -> Item -> P.Blocks
+itemToBlocks level (Heading heading children) | level < 3 =
+    (P.header level . P.text) heading `mappend`
+    foldMap (itemToBlocks $ succ level) children
+itemToBlocks level (Heading heading []) = itemToBlocks level (Body [heading])
+itemToBlocks level (Heading heading children) =
+    (P.header level . P.text) heading `mappend`
+    P.orderedList (map (itemToBlocks $ succ level) children)
+itemToBlocks _ (Body paragraphs) = foldMap (P.para . P.text) paragraphs
