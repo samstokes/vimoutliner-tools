@@ -59,7 +59,7 @@ handleParse (Right outline) = do
         ['+' : filepath] -> StylesheetInline <$> readFile filepath
         [url] -> return $ StylesheetRef url
         [] -> defaultStylesheet
-        otherwise -> error $ "Bad args: " ++ unwords args
+        _ -> error $ "Bad args: " ++ unwords args
     printHtml stylesheet outline
 
 printHtml :: Stylesheet -> Outline -> IO ()
@@ -91,7 +91,7 @@ renderItem depth (Body paragraphs) = forM_ paragraphs $ renderParagraph depth
 renderItem depth (Preformatted content) = H.pre ! depthClass depth "PRE" $ H.toHtml content
 renderItem depth (Table rows) = H.table ! depthClass depth "TAB" $ do
     H.tbody $ forM_ rows renderTableRow
-renderItem depth (UserDef type_ content) = case getReader of
+renderItem _ (UserDef type_ content) = case getReader of
     Just reader -> H.preEscapedString $ writer pandoc
         where
         writer = Pandoc.writeHtmlString Pandoc.defaultWriterOptions
@@ -100,7 +100,7 @@ renderItem depth (UserDef type_ content) = case getReader of
     where getReader = do -- Maybe monad
             type_' <- type_
             lookup (map toLower type_') Pandoc.readers
-renderItem depth (PreUserDef type_ content) = H.pre ! A.title (H.toValue $ show type_) $ H.toHtml content
+renderItem _ (PreUserDef type_ content) = H.pre ! A.title (H.toValue $ show type_) $ H.toHtml content
 
 renderParagraph :: Int -> String -> H.Html
 renderParagraph depth = (H.p ! depthClass depth "P") . H.toHtml

@@ -24,7 +24,7 @@ import Text.OTL.Types
 import Control.Applicative hiding (many, (<|>))
 import Text.Parsec hiding (parse)
 import qualified Text.Parsec as Parsec
-import Text.Parsec.String
+import Text.Parsec.String () -- just want Stream instance
 import Text.Parsec.Indent
 import Data.Char (isSpace)
 
@@ -33,7 +33,7 @@ type ParserT a = IndentParser String () a
 
 
 parse :: SourceName -> String -> Either ParseError Outline
-parse sourceName = runIndent sourceName . runParserT parser () sourceName
+parse name = runIndent name . runParserT parser () name
 
 parser :: ParserT Outline
 parser = outlineP
