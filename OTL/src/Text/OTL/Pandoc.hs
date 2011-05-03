@@ -47,4 +47,4 @@ itemToBlocks (Item content children) =
     itemContentToBlocks content `mappend`
     P.orderedList (map itemToBlocks children)
 
-itemContentToBlocks (Heading heading) = (P.plain . P.strong . P.text) heading
+itemContentToBlocks (Heading heading) = (P.para . P.strong . P.text) heading
