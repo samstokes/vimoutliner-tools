@@ -42,20 +42,17 @@ outlineP :: ParserT Outline
 outlineP = Outline <$> many1 itemP
 
 itemP :: ParserT Item
-itemP = withBlock Item (itemContentP <* spaces) itemP
+itemP = bodyP
+    <|> preformattedP
+    <|> tableP
+    <|> userDefP
+    <|> preUserDefP
+    <|> headingP
 
-itemContentP :: ParserT ItemContent
-itemContentP = bodyP
-           <|> preformattedP
-           <|> tableP
-           <|> userDefP
-           <|> preUserDefP
-           <|> headingP
+headingP :: ParserT Item
+headingP = withBlock Heading (nonEmptyLineP <* newline <* spaces) itemP
 
-headingP :: ParserT ItemContent
-headingP = Heading <$> nonEmptyLineP <* newline
-
-bodyP :: ParserT ItemContent
+bodyP :: ParserT Item
 bodyP = (Body . unlinesSplitByBlanks) <$> nonHeadingP ':'
 
 unlinesSplitByBlanks :: [String] -> [String]
@@ -68,20 +65,20 @@ splitBy p = foldr addUnlessP []
     addUnlessP item [] = [[item]]
     addUnlessP item (group : groups) = (item : group) : groups
 
-preformattedP :: ParserT ItemContent
+preformattedP :: ParserT Item
 preformattedP = (Preformatted . unlines) <$> nonHeadingP ';'
 
-tableP :: ParserT ItemContent
+tableP :: ParserT Item
 tableP = (Table . map parseTableRow) <$> nonHeadingP '|'
 
-userDefP :: ParserT ItemContent
+userDefP :: ParserT Item
 userDefP = makeUserDef <$> nonHeadingP '>'
     where
     makeUserDef (defn : rest) | not (isSpace (head defn)) = UserDef (Just defn) (mungeBody rest)
     makeUserDef textLines = UserDef Nothing (mungeBody textLines)
     mungeBody = unlines . map lstrip1
 
-preUserDefP :: ParserT ItemContent
+preUserDefP :: ParserT Item
 preUserDefP = makePreUserDef <$> nonHeadingP '<'
     where
     makePreUserDef (defn : rest) | not (isSpace (head defn)) = PreUserDef (Just defn) $ unlines rest

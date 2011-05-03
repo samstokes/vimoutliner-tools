@@ -68,7 +68,7 @@ printHtml stylesheet outline = BS.putStrLn $ renderHtml $ htmlOutline stylesheet
 htmlOutline :: Stylesheet -> Outline -> H.Html
 htmlOutline stylesheet outline = docTypeHtml $ do
     let titleItem = getOutlineTitleItem outline
-    let title = getItemTitle titleItem
+    let title = getHeading titleItem
     H.head $ do
         H.title $ H.toHtml title
         styleTag stylesheet
@@ -77,24 +77,21 @@ htmlOutline stylesheet outline = docTypeHtml $ do
             H.h1 $ H.toHtml title
         H.div ! A.class_ "MainPage" $ do
             H.ol $ do
-                forM_ (getItemChildren titleItem) $ renderItem 1
+                forM_ (getHeadingChildren titleItem) $ renderItem 1
                 forM_ (getOutlineNonTitleItems outline) $ renderItem 1
         H.div ! A.class_ "Footer" $ "Insert footer here"
 
 renderItem :: Int -> Item -> H.Html
-renderItem depth (Item content items) = do
+renderItem depth (Heading heading items) = do
     H.li ! depthClass depth "L" $ do
-        renderItemContent depth content
+        H.toHtml heading
         unless (null items) $ H.ol $ do
             forM_ items $ renderItem (succ depth)
-
-renderItemContent :: Int -> ItemContent -> H.Html
-renderItemContent _ (Heading text) = H.toHtml text
-renderItemContent depth (Body paragraphs) = forM_ paragraphs $ renderParagraph depth
-renderItemContent depth (Preformatted content) = H.pre ! depthClass depth "PRE" $ H.toHtml content
-renderItemContent depth (Table rows) = H.table ! depthClass depth "TAB" $ do
+renderItem depth (Body paragraphs) = forM_ paragraphs $ renderParagraph depth
+renderItem depth (Preformatted content) = H.pre ! depthClass depth "PRE" $ H.toHtml content
+renderItem depth (Table rows) = H.table ! depthClass depth "TAB" $ do
     H.tbody $ forM_ rows renderTableRow
-renderItemContent depth (UserDef type_ content) = case getReader of
+renderItem depth (UserDef type_ content) = case getReader of
     Just reader -> H.preEscapedString $ writer pandoc
         where
         writer = Pandoc.writeHtmlString Pandoc.defaultWriterOptions
@@ -103,7 +100,7 @@ renderItemContent depth (UserDef type_ content) = case getReader of
     where getReader = do -- Maybe monad
             type_' <- type_
             lookup (map toLower type_') Pandoc.readers
-renderItemContent depth (PreUserDef type_ content) = H.pre ! A.title (H.toValue $ show type_) $ H.toHtml content
+renderItem depth (PreUserDef type_ content) = H.pre ! A.title (H.toValue $ show type_) $ H.toHtml content
 
 renderParagraph :: Int -> String -> H.Html
 renderParagraph depth = (H.p ! depthClass depth "P") . H.toHtml
