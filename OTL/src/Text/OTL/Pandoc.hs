@@ -55,3 +55,7 @@ itemToBlocks level (Heading heading children) =
     (P.header level . P.text) heading `mappend`
     P.orderedList (map (itemToBlocks $ succ level) children)
 itemToBlocks _ (Body paragraphs) = foldMap (P.para . P.text) paragraphs
+itemToBlocks _ (Preformatted content) = P.codeBlock content
+itemToBlocks _ (Table rows) = P.simpleTable [] $ map (map (P.plain . P.text) . getRowEntries) rows
+itemToBlocks level (UserDef _ content) = itemToBlocks level $ Body [content]
+itemToBlocks level (PreUserDef _ content) = itemToBlocks level $ Preformatted content
