@@ -42,11 +42,12 @@ toPandoc outline = P.setTitle outlineTitle $ P.doc $
 
 defaultWriterOptions :: String -> IO P.WriterOptions
 defaultWriterOptions outputFormat = do
-  templateFile <- PS.readDataFile Nothing $ "templates/" ++ outputFormat ++ ".template"
-  return P.defaultWriterOptions {
-      P.writerStandalone = True
-    , P.writerTemplate = templateFile
-    }
+    templateFile <- PS.readDataFile Nothing $ "templates/" ++ outputFormat ++ ".template"
+    return P.defaultWriterOptions {
+        P.writerStandalone = True
+      , P.writerTemplate = templateFile
+      }
+  `catch` \_ -> return P.defaultWriterOptions { P.writerStandalone = True }
 
 
 itemToBlocks :: Int -> Item -> P.Blocks
