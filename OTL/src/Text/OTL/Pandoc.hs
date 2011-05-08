@@ -25,6 +25,9 @@ import qualified Text.Pandoc.Builder as P
 import qualified Text.Pandoc.Shared as PS
 import Data.Monoid (Monoid(..))
 import Data.Foldable (Foldable(..))
+import Data.Char (toLower)
+import Control.Applicative ((<$>))
+import Data.Maybe (maybeToList)
 
 
 toPandoc :: Outline -> Pandoc
@@ -61,8 +64,19 @@ itemToBlocks _ (Table rows@(headerRow : nonHeaderRows)) | isRowHeader headerRow 
     simpleTable (rowToBlocks headerRow) $ map rowToBlocks nonHeaderRows
                                           | otherwise =
     verySimpleTable $ map rowToBlocks rows
-itemToBlocks level (UserDef _ content) = itemToBlocks level $ Body [content]
-itemToBlocks level (PreUserDef _ content) = itemToBlocks level $ Preformatted content
+itemToBlocks level (UserDef type_ content) = case getReader type_ of
+    Just reader -> nested $ reader P.defaultParserState content
+    Nothing -> itemToBlocks level $ Body [content]
+itemToBlocks _ (PreUserDef type_ content) = P.codeBlockWith ("", maybeToList type_, []) content
+
+
+getReader :: Maybe String -> Maybe (P.ParserState -> String -> Pandoc)
+getReader type_ = do
+    format <- map toLower <$> type_
+    lookup format P.readers
+
+nested :: Pandoc -> P.Blocks
+nested (P.Pandoc _ blocks) = P.fromList blocks
 
 
 rowToBlocks :: TableRow -> [P.Blocks]
