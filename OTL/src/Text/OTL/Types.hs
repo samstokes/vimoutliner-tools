@@ -18,6 +18,8 @@ module Text.OTL.Types (
   , TableRow(..)
   , getOutlineTitleItem
   , getOutlineNonTitleItems
+  , splitBy
+  , linesToParagraphs
 ) where
 
 
@@ -32,7 +34,7 @@ data Item = Heading { getHeading :: String
             | Preformatted { getPreformattedContent :: String }
             | Table { getTableRows :: [TableRow] }
             | UserDef { getUserDefType :: Maybe String
-                      , getUserDefContent :: String
+                      , getUserDefLines :: [String]
                       }
             | PreUserDef { getUserDefType :: Maybe String
                          , getPreformattedContent :: String
@@ -65,3 +67,17 @@ segregateTitle outline = case segregateTitle' outline of
   segregateTitle' (Outline (title@(Heading _ _) : nonTitles)) = Right (title, nonTitles)
   segregateTitle' (Outline (item : _)) = Left $ "unexpected non-heading as first item: " ++ show item
   segregateTitle' _ = Left "empty outline!"
+
+
+linesToParagraphs :: [String] -> [String]
+linesToParagraphs = unlinesSplitByBlanks
+
+unlinesSplitByBlanks :: [String] -> [String]
+unlinesSplitByBlanks = map unlines . splitBy null
+
+splitBy :: (a -> Bool) -> [a] -> [[a]]
+splitBy p = foldr addUnlessP []
+    where
+    addUnlessP item groups | p item = [] : groups
+    addUnlessP item [] = [[item]]
+    addUnlessP item (group : groups) = (item : group) : groups

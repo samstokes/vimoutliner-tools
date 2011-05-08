@@ -65,8 +65,8 @@ itemToBlocks _ (Table rows@(headerRow : nonHeaderRows)) | isRowHeader headerRow 
                                           | otherwise =
     verySimpleTable $ map rowToBlocks rows
 itemToBlocks level (UserDef type_ content) = case getReader type_ of
-    Just reader -> nested $ reader P.defaultParserState content
-    Nothing -> itemToBlocks level $ Body [content]
+    Just reader -> nested $ reader P.defaultParserState (unlines content)
+    Nothing -> itemToBlocks level $ Body (linesToParagraphs content)
 itemToBlocks _ (PreUserDef type_ content) = P.codeBlockWith ("", maybeToList type_, []) content
 
 

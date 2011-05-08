@@ -53,17 +53,7 @@ headingP :: ParserT Item
 headingP = withBlock Heading (nonEmptyLineP <* newline <* spaces) itemP
 
 bodyP :: ParserT Item
-bodyP = (Body . unlinesSplitByBlanks) <$> nonHeadingP ':'
-
-unlinesSplitByBlanks :: [String] -> [String]
-unlinesSplitByBlanks = map unlines . splitBy null
-
-splitBy :: (a -> Bool) -> [a] -> [[a]]
-splitBy p = foldr addUnlessP []
-    where
-    addUnlessP item groups | p item = [] : groups
-    addUnlessP item [] = [[item]]
-    addUnlessP item (group : groups) = (item : group) : groups
+bodyP = (Body . linesToParagraphs) <$> nonHeadingP ':'
 
 preformattedP :: ParserT Item
 preformattedP = (Preformatted . unlines) <$> nonHeadingP ';'
@@ -76,7 +66,7 @@ userDefP = makeUserDef <$> nonHeadingP '>'
     where
     makeUserDef (defn : rest) | not (isSpace (head defn)) = UserDef (Just defn) (mungeBody rest)
     makeUserDef textLines = UserDef Nothing (mungeBody textLines)
-    mungeBody = unlines . map lstrip1
+    mungeBody = map lstrip1
 
 preUserDefP :: ParserT Item
 preUserDefP = makePreUserDef <$> nonHeadingP '<'
