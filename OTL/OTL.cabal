@@ -6,8 +6,8 @@ license: AllRightsReserved
 license-file: ""
 copyright:
 maintainer:
-build-depends: parsec -any, pandoc-types -any, pandoc -any,
-               mtl -any, indents -any, bytestring -any, blaze-html -any, base -any
+build-depends: base -any, bytestring -any, indents -any,
+               pandoc -any, pandoc-types -any, parsec -any
 stability:
 homepage:
 package-url:
