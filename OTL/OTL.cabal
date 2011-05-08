@@ -21,6 +21,35 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
+exposed-modules: Text.OTL Text.OTL.Pandoc Text.OTL.Parser
+                 Text.OTL.Types
+exposed: True
+buildable: True
+build-tools:
+cpp-options:
+cc-options:
+ld-options:
+pkgconfig-depends:
+frameworks:
+c-sources:
+default-language:
+other-languages:
+default-extensions:
+other-extensions:
+extensions:
+extra-libraries:
+extra-lib-dirs:
+includes:
+install-includes:
+include-dirs:
+hs-source-dirs: src
+other-modules:
+ghc-prof-options:
+ghc-shared-options:
+ghc-options: -Wall
+hugs-options:
+nhc98-options:
+jhc-options:
  
 executable: OTL
 main-is: Main.hs
@@ -43,8 +72,8 @@ includes:
 install-includes:
 include-dirs:
 hs-source-dirs: src
-other-modules: Text.OTL.Pandoc Text.OTL Text.OTL.Parser
-               Text.OTL.Types
+other-modules: Text.OTL Text.OTL.Types Text.OTL.Parser
+               Text.OTL.Pandoc
 ghc-prof-options:
 ghc-shared-options:
 ghc-options: -Wall
