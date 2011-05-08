@@ -40,9 +40,9 @@ toPandoc outline = P.setTitle outlineTitle $ P.doc $
       nonTitleItems = getOutlineNonTitleItems outline
 
 
-defaultWriterOptions :: IO P.WriterOptions
-defaultWriterOptions = do
-  templateFile <- PS.readDataFile Nothing "templates/html.template"
+defaultWriterOptions :: String -> IO P.WriterOptions
+defaultWriterOptions outputFormat = do
+  templateFile <- PS.readDataFile Nothing $ "templates/" ++ outputFormat ++ ".template"
   return P.defaultWriterOptions {
       P.writerStandalone = True
     , P.writerTemplate = templateFile
