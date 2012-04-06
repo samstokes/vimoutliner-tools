@@ -57,7 +57,7 @@ itemToBlocks level (Heading heading children) | level < 3 =
 itemToBlocks level (Heading heading []) = itemToBlocks level (Body [heading])
 itemToBlocks level (Heading heading children) =
     (P.header level . P.text) heading `mappend`
-    P.orderedList (map (itemToBlocks $ succ level) children)
+    mconcat (map (itemToBlocks $ succ level) children)
 itemToBlocks _ (Body paragraphs) = foldMap (P.para . P.text) paragraphs
 itemToBlocks _ (Preformatted content) = P.codeBlock content
 itemToBlocks _ (Table []) = error "empty table"
