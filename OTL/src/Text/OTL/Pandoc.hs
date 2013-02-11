@@ -68,6 +68,8 @@ itemToBlocks _ (Table rows@(headerRow : nonHeaderRows)) | isRowHeader headerRow 
 itemToBlocks level (UserDef type_ content) = case getReader type_ of
     Just reader -> nested $ reader P.defaultParserState (unlines content)
     Nothing -> itemToBlocks level $ Body (linesToParagraphs content)
+itemToBlocks _ (PreUserDef (Just "IMAGE") content) = P.plain $ P.image url ("title is " ++ url) (P.text $ "alt is " ++ url)
+  where url = takeUntilFirst '\n' content
 itemToBlocks _ (PreUserDef type_ content) = P.codeBlockWith ("", maybeToList type_, []) content
 
 
@@ -78,6 +80,10 @@ getReader type_ = do
 
 nested :: Pandoc -> P.Blocks
 nested (P.Pandoc _ blocks) = P.fromList blocks
+
+
+takeUntilFirst :: Eq a => a -> [a] -> [a]
+takeUntilFirst c = takeWhile (/= c)
 
 
 rowToBlocks :: TableRow -> [P.Blocks]
