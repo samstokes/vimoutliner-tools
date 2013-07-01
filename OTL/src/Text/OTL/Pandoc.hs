@@ -23,11 +23,14 @@ import Text.Pandoc (Pandoc)
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Builder as P
 import qualified Text.Pandoc.Shared as PS
+import Control.Exception (catch)
+import Data.Default (def)
 import Data.Monoid (Monoid(..))
 import Data.Foldable (Foldable(..))
 import Data.Char (toLower)
 import Control.Applicative ((<$>))
 import Data.Maybe (maybeToList)
+import Data.ByteString.Char8 (unpack)
 
 
 toPandoc :: Outline -> Pandoc
@@ -43,14 +46,14 @@ toPandoc outline = P.setTitle outlineTitle $ P.doc $
 defaultWriterOptions :: String -> IO P.WriterOptions
 defaultWriterOptions outputFormat = do
     templateFile <- PS.readDataFile Nothing $ "templates/default." ++ outputFormat
-    return P.defaultWriterOptions {
+    return def {
         P.writerStandalone = True
-      , P.writerTemplate = templateFile
+      , P.writerTemplate = unpack templateFile
       }
-  `catch` \_ -> return P.defaultWriterOptions { P.writerStandalone = True }
+  `catch` \_ -> return def { P.writerStandalone = True }
 
 
-itemToBlocks :: Int -> Item -> P.Blocks
+itemToBlocks :: Int -> Item -> IO P.Blocks
 itemToBlocks level (Heading heading children) | level < 3 =
     (P.header level . P.text) heading `mappend`
     foldMap (itemToBlocks $ succ level) children
@@ -66,14 +69,14 @@ itemToBlocks _ (Table rows@(headerRow : nonHeaderRows)) | isRowHeader headerRow 
                                           | otherwise =
     verySimpleTable $ map rowToBlocks rows
 itemToBlocks level (UserDef type_ content) = case getReader type_ of
-    Just reader -> nested $ reader P.defaultParserState (unlines content)
+    Just reader -> nested $ reader def (unlines content)
     Nothing -> itemToBlocks level $ Body (linesToParagraphs content)
 itemToBlocks _ (PreUserDef (Just "IMAGE") content) = P.plain $ P.image url ("title is " ++ url) (P.text $ "alt is " ++ url)
   where url = takeUntilFirst '\n' content
 itemToBlocks _ (PreUserDef type_ content) = P.codeBlockWith ("", maybeToList type_, []) content
 
 
-getReader :: Maybe String -> Maybe (P.ParserState -> String -> Pandoc)
+getReader :: Maybe String -> Maybe (P.ReaderOptions -> String -> IO Pandoc)
 getReader type_ = do
     format <- map toLower <$> type_
     lookup format P.readers
@@ -98,7 +101,7 @@ simpleTable :: [P.Blocks]   -- ^ Headers
             -> P.Blocks
 simpleTable headers = P.table emptyCaption (mapConst defaultAlignWidth headers) headers
     where
-        emptyCaption = P.empty
+        emptyCaption = mempty
         defaultAlignWidth = (P.AlignDefault, 0)
 
 

@@ -7,7 +7,8 @@ license-file: ""
 copyright:
 maintainer:
 build-depends: base -any, bytestring -any, indents -any,
-               pandoc -any, pandoc-types -any, parsec -any
+               pandoc -any, pandoc-types -any, parsec -any,
+               data-default -any
 stability:
 homepage:
 package-url:
