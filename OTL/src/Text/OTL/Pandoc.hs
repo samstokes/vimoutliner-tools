@@ -98,7 +98,7 @@ simpleTable :: [P.Blocks]   -- ^ Headers
             -> P.Blocks
 simpleTable headers = P.table emptyCaption (mapConst defaultAlignWidth headers) headers
     where
-        emptyCaption = P.empty
+        emptyCaption = mempty
         defaultAlignWidth = (P.AlignDefault, 0)
 
 
