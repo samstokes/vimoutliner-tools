@@ -42,5 +42,5 @@ handleParse (Right outline) = do
                         _ -> error $ "bad args " ++ show args
     let writer = fromMaybe (error $ "can't write " ++ outputFormat) $ lookup outputFormat Pandoc.writers
     options <- defaultWriterOptions outputFormat
-    let pandoc = toPandoc outline
+    pandoc <- toPandoc outline
     putStrLn $ writer options $ pandoc
