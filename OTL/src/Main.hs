@@ -19,12 +19,14 @@ module Main (
 
 import Text.OTL
 import Text.OTL.Pandoc
+import qualified Text.Pandoc.UTF8 as UTF8
 
 import Text.ParserCombinators.Parsec (ParseError)
 import System.Exit (exitFailure)
 import qualified Text.Pandoc as Pandoc
 import System.Environment (getArgs)
 import Data.Maybe (fromMaybe)
+import qualified Data.ByteString.Lazy as B
 
 
 main :: IO ()
@@ -43,4 +45,9 @@ handleParse (Right outline) = do
     let writer = fromMaybe (error $ "can't write " ++ outputFormat) $ lookup outputFormat Pandoc.writers
     options <- defaultWriterOptions outputFormat
     pandoc <- toPandoc outline
-    putStrLn $ writer options $ pandoc
+    let writeBinary :: B.ByteString -> IO ()
+        writeBinary = B.writeFile (UTF8.encodePath "-")
+    case writer of
+      Pandoc.PureStringWriter w -> UTF8.putStr $ w options pandoc
+      Pandoc.IOStringWriter w -> w options pandoc >>= UTF8.putStr
+      Pandoc.IOByteStringWriter w -> w options pandoc >>= writeBinary
