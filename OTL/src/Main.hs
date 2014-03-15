@@ -43,7 +43,7 @@ handleParse (Right outline) = do
                         [] -> "html"
                         _ -> error $ "bad args " ++ show args
     let writer = fromMaybe (error $ "can't write " ++ outputFormat) $ lookup outputFormat Pandoc.writers
-    options <- defaultWriterOptions outputFormat
+    options <- opts outputFormat
     pandoc <- toPandoc outline
     let writeBinary :: B.ByteString -> IO ()
         writeBinary = B.writeFile (UTF8.encodePath "-")
@@ -51,3 +51,6 @@ handleParse (Right outline) = do
       Pandoc.PureStringWriter w -> UTF8.putStr $ w options pandoc
       Pandoc.IOStringWriter w -> w options pandoc >>= UTF8.putStr
       Pandoc.IOByteStringWriter w -> w options pandoc >>= writeBinary
+  where opts format = do
+          options <- defaultWriterOptions format
+          return options { Pandoc.writerHighlight = True }
