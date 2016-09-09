@@ -87,7 +87,9 @@ itemToBlocks _ (PreUserDef type_ content) = pure $ P.codeBlockWith ("", maybeToL
 getReader :: Maybe String -> Maybe (P.ReaderOptions -> String -> IO Pandoc)
 getReader type_ = do
     format <- map toLower <$> type_
-    lookup format P.readers
+    stringReader <$> lookup format P.readers
+  where stringReader (P.StringReader reader) = reader
+        stringReader (P.ByteStringReader _) = error $ "got ByteStringReader for type " ++ show type_
 
 nested :: Pandoc -> P.Blocks
 nested (P.Pandoc _ blocks) = P.fromList blocks
