@@ -20,6 +20,7 @@ module Text.OTL.Pandoc (
 
 import Text.OTL.Types
 import Text.Pandoc (Pandoc)
+import Text.Pandoc.Error (PandocError)
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Builder as P
 import qualified Text.Pandoc.Shared as PS
@@ -88,8 +89,10 @@ getReader :: Maybe String -> Maybe (P.ReaderOptions -> String -> IO Pandoc)
 getReader type_ = do
     format <- map toLower <$> type_
     stringReader <$> lookup format P.readers
-  where stringReader (P.StringReader reader) = reader
+  where stringReader (P.StringReader reader) = handlingParseErrors reader
         stringReader (P.ByteStringReader _) = error $ "got ByteStringReader for type " ++ show type_
+        handlingParseErrors reader opts str =
+            either (error . show) id <$> reader opts str
 
 nested :: Pandoc -> P.Blocks
 nested (P.Pandoc _ blocks) = P.fromList blocks
