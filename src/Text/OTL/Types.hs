@@ -25,7 +25,7 @@ module Text.OTL.Types (
 
 
 newtype Outline = Outline { getOutlineItems :: [Item] }
-  deriving (Show)
+  deriving (Eq, Show)
 
 data Item = Heading { getHeading :: String
                     , getHeadingChildren :: [Item]
@@ -39,12 +39,12 @@ data Item = Heading { getHeading :: String
             | PreUserDef { getUserDefType :: Maybe String
                          , getPreformattedContent :: String
                          }
-  deriving (Show)
+  deriving (Eq, Show)
 
 data TableRow = TableRow { isRowHeader :: Bool
                          , getRowEntries :: [String]
                          }
-  deriving (Show)
+  deriving (Eq, Show)
 
 
 
