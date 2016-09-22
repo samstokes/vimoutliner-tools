@@ -1,0 +1,43 @@
+name:                vimoutliner
+version:             0.1.0.0
+synopsis:            Parse the OTL text format used by vimoutliner.
+description:         Command-line tools and a Haskell library for parsing and transforming the OTL text format used by vimoutliner.
+homepage:            https://github.com/samstokes/vimoutliner-tools
+-- TODO license and license-file
+author:              Sam Stokes
+maintainer:          me@samstokes.co.uk
+copyright:           2011-2016 Sam Stokes
+category:            Web
+build-type:          Simple
+-- extra-source-files:
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Text.OTL
+                       Text.OTL.Pandoc
+                       Text.OTL.Parser
+                       Text.OTL.Types
+  build-depends:       base >= 4.7 && < 5
+                     , bytestring
+                     , data-default
+                     , parsec
+                     , indents
+                     , pandoc
+                     , pandoc-types
+  default-language:    Haskell2010
+
+executable vimoutliner-pandoc
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , bytestring
+                     , parsec
+                     , pandoc
+                     , vimoutliner
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/samstokes/vimoutliner-tools
