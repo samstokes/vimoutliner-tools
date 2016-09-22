@@ -3,29 +3,30 @@
 import Data.Text (unpack)
 import Test.Hspec
 import Test.Hspec.Expectations.Contrib (isRight)
-import Text.Shakespeare.Text (st)
+import Text.Shakespeare.Text (sbt)
 
 import Text.OTL
 
 main :: IO ()
 main = hspec $ do
   describe "Text.OTL.parse" $ do
-    let parsed = parse "dummy"
-
     it "parses a one-line outline" $ do
-      parsed "Hello\n" `shouldBe` Right (Outline [Heading "Hello" []])
+      parse "dummy" "Hello\n" `shouldBe` Right (Outline [Heading "Hello" []])
+
+    let parsed text = do
+          let result = parse "dummy" $ unpack text
+          result `shouldSatisfy` isRight
+          let Right outline = result
+          return outline
 
     it "parses a nontrivial outline" $ do
-      let doc = unpack [st|Plan
-	Collect underpants
-	???
-		:Should probably clarify this step
-	Profit!
-      |]
-
-      let result = parsed doc
-      result `shouldSatisfy` isRight
-      let Right (Outline items) = result
+      Outline items <- parsed $
+          [sbt|Plan
+              |	Collect underpants
+              |	???
+              |		:Should probably clarify this step
+              |	Profit!
+              |]
 
       map getHeading items `shouldBe` ["Plan"]
 
