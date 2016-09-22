@@ -5,7 +5,11 @@ import Test.Hspec
 import Test.Hspec.Expectations.Contrib (isRight)
 import Text.Shakespeare.Text (sbt)
 
+import Text.Pandoc (Pandoc(..))
+import qualified Text.Pandoc as P
+
 import Text.OTL
+import Text.OTL.Pandoc
 
 main :: IO ()
 main = hspec $ do
@@ -35,3 +39,25 @@ main = hspec $ do
 
       let step2 = steps !! 1
       getHeadingChildren step2 `shouldBe` [Body ["Should probably clarify this step\n"]]
+
+  describe "Text.OTL.Pandoc.toPandoc" $ do
+    it "uses the first toplevel heading as the title" $ do
+      Pandoc meta blocks <- toPandoc $ Outline [Heading "Hello" []]
+
+      P.docTitle meta `shouldBe` [P.Str "Hello"]
+      length blocks `shouldBe` 0
+
+    let outlineWith items = Outline [Heading "dummy title" items]
+
+    it "converts a table" $ do
+      let table = Table [TableRow False ["John", "Doe"]]
+          outline = outlineWith [table]
+      Pandoc _ blocks <- toPandoc outline
+
+      length blocks `shouldBe` 1
+      let ptable = head blocks
+
+      let shouldHaveTableRows (P.Table _ _ _ _ rows) expectedRows = rows `shouldBe` expectedRows
+          shouldHaveTableRows block _ = expectationFailure $ "not a table: " ++ show block
+          row = [[P.Plain [P.Str "John"]], [P.Plain [P.Str "Doe"]]]
+      ptable `shouldHaveTableRows` [row]

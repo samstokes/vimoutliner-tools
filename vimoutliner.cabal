@@ -45,6 +45,7 @@ test-suite vimoutliner-test
   build-depends:       base
                      , hspec
                      , hspec-expectations
+                     , pandoc
                      , shakespeare
                      , text
                      , vimoutliner
