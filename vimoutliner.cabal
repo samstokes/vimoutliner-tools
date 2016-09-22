@@ -1,5 +1,5 @@
 name:                vimoutliner
-version:             0.1.0.0
+version:             0.2.0.0
 synopsis:            Parse the OTL text format used by vimoutliner.
 description:         Command-line tools and a Haskell library for parsing and transforming the OTL text format used by vimoutliner.
 homepage:            https://github.com/samstokes/vimoutliner-tools
