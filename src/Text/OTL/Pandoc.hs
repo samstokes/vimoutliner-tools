@@ -74,7 +74,7 @@ itemToBlocks _ (Body paragraphs) = pure $ foldMap (P.para . P.text) paragraphs
 itemToBlocks _ (Preformatted content) = pure $ P.codeBlock content
 itemToBlocks _ (Table []) = error "empty table"
 itemToBlocks _ (Table rows@(headerRow : nonHeaderRows)) | isRowHeader headerRow = pure $
-    simpleTable (rowToBlocks headerRow) $ map rowToBlocks nonHeaderRows
+    P.simpleTable (rowToBlocks headerRow) $ map rowToBlocks nonHeaderRows
                                           | otherwise = pure $
     verySimpleTable $ map rowToBlocks rows
 itemToBlocks level (UserDef type_ content) = case getReader type_ of
@@ -106,26 +106,10 @@ rowToBlocks :: TableRow -> [P.Blocks]
 rowToBlocks = map (P.plain . P.text) . getRowEntries
 
 
--- | A simple table without a caption.
--- Bug fix for Text.Pandoc.Builder.simpleTable which produces empty tables due
--- to an empty (alignment, width) list.
-simpleTable :: [P.Blocks]   -- ^ Headers
-            -> [[P.Blocks]] -- ^ Rows
-            -> P.Blocks
-simpleTable headers = P.table emptyCaption (mapConst defaultAlignWidth headers) headers
-    where
-        emptyCaption = mempty
-        defaultAlignWidth = (P.AlignDefault, 0)
-
-
 -- | A very simple table without a caption and with autonumbered "Column n" headers.
 verySimpleTable :: [[P.Blocks]] -> P.Blocks
-verySimpleTable [] = simpleTable [] []
-verySimpleTable rows@(row : _) = simpleTable autoHeaders rows
+verySimpleTable [] = P.simpleTable [] []
+verySimpleTable rows@(row : _) = P.simpleTable autoHeaders rows
     where
         autoHeaders = map (autoHeader . snd) $ zip row ([1..] :: [Integer])
         autoHeader n = (P.plain . P.text) $ "Column " ++ show n
-
-
-mapConst :: Functor f => b -> f a -> f b
-mapConst k = fmap (const k)
