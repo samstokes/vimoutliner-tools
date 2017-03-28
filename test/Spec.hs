@@ -40,9 +40,9 @@ main = hspec $ do
       let step2 = steps !! 1
       getHeadingChildren step2 `shouldBe` [Body ["Should probably clarify this step\n"]]
 
-  describe "Text.OTL.Pandoc.toPandoc" $ do
+  describe "Text.OTL.Pandoc.toPandoc StylePresentation" $ do
     it "uses the first toplevel heading as the title" $ do
-      Pandoc meta blocks <- toPandoc $ Outline [Heading "Hello" []]
+      Pandoc meta blocks <- toPandoc StylePresentation $ Outline [Heading "Hello" []]
 
       P.docTitle meta `shouldBe` [P.Str "Hello"]
       length blocks `shouldBe` 0
@@ -52,7 +52,7 @@ main = hspec $ do
     it "converts a table" $ do
       let table = Table [TableRow False ["John", "Doe"]]
           outline = outlineWith [table]
-      Pandoc _ blocks <- toPandoc outline
+      Pandoc _ blocks <- toPandoc StylePresentation outline
 
       length blocks `shouldBe` 1
       let ptable = head blocks

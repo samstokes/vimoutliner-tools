@@ -34,6 +34,10 @@ import Data.Maybe (maybeToList)
 import Data.ByteString.Char8 (unpack)
 
 
+data Style = StylePresentation | StyleNotes
+  deriving (Read, Show, Eq)
+
+
 foldMapM :: (Monoid monoid, Monad monad, Foldable t) => (a -> monad monoid) -> t a -> monad monoid
 foldMapM f = foldrM appF mempty
   where
@@ -44,7 +48,7 @@ foldMapM f = foldrM appF mempty
 
 toPandoc :: Outline -> IO Pandoc
 toPandoc outline = P.setTitle outlineTitle . P.doc <$>
-    foldMapM (itemToBlocks 1) (titleChildren ++ nonTitleItems)
+    foldMapM (itemToBlocks StylePresentation 1) (titleChildren ++ nonTitleItems)
     where
       titleItem = getOutlineTitleItem outline
       outlineTitle = P.text $ getHeading titleItem
@@ -62,27 +66,35 @@ defaultWriterOptions outputFormat = do
   `catch` ((\_ -> return def { P.writerStandalone = True }) :: SomeException -> IO P.WriterOptions)
 
 
-itemToBlocks :: Int -> Item -> IO P.Blocks
-itemToBlocks level (Heading heading children) | level < 3 = mappend <$>
+itemToBlocks :: Style -> Int -> Item -> IO P.Blocks
+itemToBlocks StylePresentation level (Heading heading children) | level < 3 = mappend <$>
     pure ((P.header level . P.text) heading) <*>
-    foldMapM (itemToBlocks $ succ level) children
-itemToBlocks level (Heading heading []) = itemToBlocks level (Body [heading])
-itemToBlocks level (Heading heading children) = mappend <$>
+    foldMapM (itemToBlocks StylePresentation $ succ level) children
+itemToBlocks StylePresentation level (Heading heading []) = itemToBlocks StylePresentation level (Body [heading])
+itemToBlocks StylePresentation level (Heading heading children) = mappend <$>
     pure ((P.header level . P.text) heading) <*>
-    foldMapM (itemToBlocks $ succ level) children
-itemToBlocks _ (Body paragraphs) = pure $ foldMap (P.para . P.text) paragraphs
-itemToBlocks _ (Preformatted content) = pure $ P.codeBlock content
-itemToBlocks _ (Table []) = error "empty table"
-itemToBlocks _ (Table rows@(headerRow : nonHeaderRows)) | isRowHeader headerRow = pure $
+    foldMapM (itemToBlocks StylePresentation $ succ level) children
+itemToBlocks StylePresentation _ (Body paragraphs) = pure $ foldMap (P.para . P.text) paragraphs
+itemToBlocks StylePresentation _ (Preformatted content) = pure $ P.codeBlock content
+itemToBlocks StylePresentation _ (Table []) = error "empty table"
+itemToBlocks StylePresentation _ (Table rows@(headerRow : nonHeaderRows)) | isRowHeader headerRow = pure $
     P.simpleTable (rowToBlocks headerRow) $ map rowToBlocks nonHeaderRows
                                           | otherwise = pure $
     verySimpleTable $ map rowToBlocks rows
-itemToBlocks level (UserDef type_ content) = case getReader type_ of
+itemToBlocks StylePresentation level (UserDef type_ content) = case getReader type_ of
     Just reader -> nested <$> reader def (unlines content)
-    Nothing -> itemToBlocks level $ Body (linesToParagraphs content)
-itemToBlocks _ (PreUserDef (Just "IMAGE") content) = pure $ P.plain $ P.image url ("title is " ++ url) (P.text $ "alt is " ++ url)
+    Nothing -> itemToBlocks StylePresentation level $ Body (linesToParagraphs content)
+itemToBlocks StylePresentation _ (PreUserDef (Just "IMAGE") content) = pure $ P.plain $ P.image url ("title is " ++ url) (P.text $ "alt is " ++ url)
   where url = takeUntilFirst '\n' content
-itemToBlocks _ (PreUserDef type_ content) = pure $ P.codeBlockWith ("", maybeToList type_, []) content
+itemToBlocks StylePresentation _ (PreUserDef type_ content) = pure $ P.codeBlockWith ("", maybeToList type_, []) content
+
+itemToBlocks StyleNotes 1 (Heading heading children) = mappend <$>
+    pure ((P.header 2 . P.text) heading) <*>
+    (P.bulletList <$> mapM (itemToBlocks StyleNotes 2) children)
+itemToBlocks StyleNotes level (Heading heading children) = mappend <$>
+    pure ((P.plain . P.text) heading) <*>
+    (P.bulletList <$> mapM (itemToBlocks StyleNotes level) children)
+itemToBlocks StyleNotes _ (Body paragraphs) = pure $ foldMap (P.para . P.text) paragraphs
 
 
 getReader :: Maybe String -> Maybe (P.ReaderOptions -> String -> IO Pandoc)
