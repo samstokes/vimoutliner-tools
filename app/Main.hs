@@ -50,17 +50,12 @@ main = do
 parseOptions :: O.Parser Options
 parseOptions = Options <$>
       O.strOption (O.value "html" <> O.long "output-format" <> O.short 'f'
-        <> O.metavar "FORMAT" <> O.help "Select output format (known to pandoc) - default html")
+        <> O.metavar "FORMAT" <> O.help "Select output format (known to pandoc)" <> O.showDefault)
   <*> O.option readStyle (O.value StyleNotes <> O.long "outline-style" <> O.short 's'
-       <> O.metavar "STYLE" <> O.help "Select outline style - notes (default) or presentation")
+       <> O.metavar "STYLE" <> O.help "Select outline style - notes or presentation" <> O.showDefaultWith (show . styleName))
 
 readStyle :: O.ReadM Style
-readStyle = do
-  val <- O.str
-  case val of
-    "notes" -> return StyleNotes
-    "presentation" -> return StylePresentation
-    _ -> O.readerError $ "invalid style '" ++ val ++ "'"
+readStyle = O.str >>= either O.readerError return . nameToStyle
 
 lookupWriteFunc :: String -> IO (Pandoc.Pandoc -> IO ())
 lookupWriteFunc outputFormat = do

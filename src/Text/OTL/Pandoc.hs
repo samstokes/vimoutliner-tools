@@ -13,7 +13,7 @@
 -----------------------------------------------------------------------------
 
 module Text.OTL.Pandoc (
-    Style(..),
+    Style(..), styleName, nameToStyle,
     toPandoc
   , defaultWriterOptions
 ) where
@@ -37,6 +37,15 @@ import Data.ByteString.Char8 (unpack)
 
 data Style = StylePresentation | StyleNotes
   deriving (Read, Show, Eq)
+
+styleName :: Style -> String
+styleName StylePresentation = "presentation"
+styleName StyleNotes = "notes"
+
+nameToStyle :: String -> Either String Style
+nameToStyle "presentation" = Right StylePresentation
+nameToStyle "notes" = Right StyleNotes
+nameToStyle name = Left $ "invalid style " ++ show name
 
 
 foldMapM :: (Monoid monoid, Monad monad, Foldable t) => (a -> monad monoid) -> t a -> monad monoid
