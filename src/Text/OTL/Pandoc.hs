@@ -13,6 +13,7 @@
 -----------------------------------------------------------------------------
 
 module Text.OTL.Pandoc (
+    Style(..),
     toPandoc
   , defaultWriterOptions
 ) where
@@ -46,9 +47,9 @@ foldMapM f = foldrM appF mempty
       return $ mappend fa b
 
 
-toPandoc :: Outline -> IO Pandoc
-toPandoc outline = P.setTitle outlineTitle . P.doc <$>
-    foldMapM (itemToBlocks StylePresentation 1) (titleChildren ++ nonTitleItems)
+toPandoc :: Style -> Outline -> IO Pandoc
+toPandoc style outline = P.setTitle outlineTitle . P.doc <$>
+    foldMapM (itemToBlocks style 1) (titleChildren ++ nonTitleItems)
     where
       titleItem = getOutlineTitleItem outline
       outlineTitle = P.text $ getHeading titleItem

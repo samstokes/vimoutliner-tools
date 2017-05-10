@@ -34,6 +34,7 @@ import qualified Text.Pandoc.UTF8 as UTF8
 
 data Options = Options {
     optsOutputFormat :: String
+  , optsOutlineStyle :: Style
   }
 
 
@@ -44,12 +45,22 @@ main = do
   stdin <- getContents
   case parse "<stdin>" stdin of
     Left err -> print err >> exitFailure
-    Right outline -> toPandoc outline >>= writeFunc
+    Right outline -> toPandoc (optsOutlineStyle opts) outline >>= writeFunc
 
 parseOptions :: O.Parser Options
 parseOptions = Options <$>
-    O.strOption (O.value "html" <> O.long "output-format" <> O.short 'f'
-      <> O.metavar "FORMAT" <> O.help "Select output format (known to pandoc) - default html")
+      O.strOption (O.value "html" <> O.long "output-format" <> O.short 'f'
+        <> O.metavar "FORMAT" <> O.help "Select output format (known to pandoc) - default html")
+  <*> O.option readStyle (O.value StyleNotes <> O.long "outline-style" <> O.short 's'
+       <> O.metavar "STYLE" <> O.help "Select outline style - notes (default) or presentation")
+
+readStyle :: O.ReadM Style
+readStyle = do
+  val <- O.str
+  case val of
+    "notes" -> return StyleNotes
+    "presentation" -> return StylePresentation
+    _ -> O.readerError $ "invalid style '" ++ val ++ "'"
 
 lookupWriteFunc :: String -> IO (Pandoc.Pandoc -> IO ())
 lookupWriteFunc outputFormat = do
