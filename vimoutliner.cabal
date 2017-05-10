@@ -33,6 +33,7 @@ executable vimoutliner-pandoc
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , bytestring
+                     , optparse-applicative
                      , parsec
                      , pandoc
                      , vimoutliner

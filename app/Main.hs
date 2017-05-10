@@ -17,40 +17,50 @@ module Main (
     main
 ) where
 
+
+import qualified Text.ParserCombinators.Parsec as Parsec
+import Control.Monad ((>=>))
+import qualified Data.ByteString.Lazy as B
+import Data.Maybe (fromMaybe)
+import Data.Monoid ((<>))
+import qualified Options.Applicative as O
+import System.Environment (getArgs)
+import System.Exit (exitFailure)
 import Text.OTL
 import Text.OTL.Pandoc
+import qualified Text.Pandoc as Pandoc
 import qualified Text.Pandoc.UTF8 as UTF8
 
-import Text.ParserCombinators.Parsec (ParseError)
-import System.Exit (exitFailure)
-import qualified Text.Pandoc as Pandoc
-import System.Environment (getArgs)
-import Data.Maybe (fromMaybe)
-import qualified Data.ByteString.Lazy as B
+
+data Options = Options {
+    optsOutputFormat :: String
+  }
 
 
 main :: IO ()
 main = do
+  opts <- O.execParser $ O.info (O.helper <*> parseOptions) O.fullDesc
+  writeFunc <- lookupWriteFunc $ optsOutputFormat opts
   stdin <- getContents
-  handleParse $ parse "<stdin>" stdin
+  case parse "<stdin>" stdin of
+    Left err -> print err >> exitFailure
+    Right outline -> toPandoc outline >>= writeFunc
 
-handleParse :: Either ParseError Outline -> IO ()
-handleParse (Left err) = print err >> exitFailure
-handleParse (Right outline) = do
-    args <- getArgs
-    let outputFormat = case args of
-                        [format] -> format
-                        [] -> "html"
-                        _ -> error $ "bad args " ++ show args
-    let writer = fromMaybe (error $ "can't write " ++ outputFormat) $ lookup outputFormat Pandoc.writers
-    options <- opts outputFormat
-    pandoc <- toPandoc outline
-    let writeBinary :: B.ByteString -> IO ()
-        writeBinary = B.writeFile (UTF8.encodePath "-")
-    case writer of
-      Pandoc.PureStringWriter w -> UTF8.putStr $ w options pandoc
-      Pandoc.IOStringWriter w -> w options pandoc >>= UTF8.putStr
-      Pandoc.IOByteStringWriter w -> w options pandoc >>= writeBinary
-  where opts format = do
-          options <- defaultWriterOptions format
-          return options { Pandoc.writerHighlight = True }
+parseOptions :: O.Parser Options
+parseOptions = Options <$>
+    O.strOption (O.value "html" <> O.long "output-format" <> O.short 'f'
+      <> O.metavar "FORMAT" <> O.help "Select output format (known to pandoc) - default html")
+
+lookupWriteFunc :: String -> IO (Pandoc.Pandoc -> IO ())
+lookupWriteFunc outputFormat = do
+    let mWriter = lookup outputFormat Pandoc.writers
+    writerOptions <- withHighlight <$> defaultWriterOptions outputFormat
+    return $ case mWriter of
+      Just (Pandoc.PureStringWriter w) -> UTF8.putStr . w writerOptions
+      Just (Pandoc.IOStringWriter w) -> w writerOptions >=> UTF8.putStr
+      Just (Pandoc.IOByteStringWriter w) -> w writerOptions >=> writeBinary
+      Nothing -> error $ "can't write " ++ outputFormat
+  where
+    withHighlight options = options { Pandoc.writerHighlight = True }
+    writeBinary :: B.ByteString -> IO ()
+    writeBinary = B.writeFile (UTF8.encodePath "-")
