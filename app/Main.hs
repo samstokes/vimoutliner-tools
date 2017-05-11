@@ -18,13 +18,10 @@ module Main (
 ) where
 
 
-import qualified Text.ParserCombinators.Parsec as Parsec
 import Control.Monad ((>=>))
 import qualified Data.ByteString.Lazy as B
-import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import qualified Options.Applicative as O
-import System.Environment (getArgs)
 import System.Exit (exitFailure)
 import Text.OTL
 import Text.OTL.Pandoc

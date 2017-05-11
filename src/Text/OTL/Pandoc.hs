@@ -21,16 +21,13 @@ module Text.OTL.Pandoc (
 
 import Text.OTL.Types
 import Text.Pandoc (Pandoc)
-import Text.Pandoc.Error (PandocError)
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Builder as P
 import qualified Text.Pandoc.Shared as PS
 import Control.Exception
 import Data.Default (def)
-import Data.Monoid (Monoid(..))
-import Data.Foldable (Foldable(..), foldrM)
+import Data.Foldable (foldrM)
 import Data.Char (toLower)
-import Control.Applicative
 import Data.Maybe (maybeToList)
 import Data.ByteString.Char8 (unpack)
 

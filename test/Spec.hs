@@ -1,6 +1,5 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-import Control.Monad (mapM_)
 import Data.List (intersperse)
 import Data.Text (unpack)
 import Test.Hspec
@@ -80,7 +79,7 @@ main = hspec $ do
 
     -- TODO is this really the right semantics? (vs paras or a single string)
     it "parses a user-defined block into lines" $ do
-      Outline [Heading _ [UserDef mType lines]] <- parsed $
+      Outline [Heading _ [UserDef mType textlines]] <- parsed $
           [sbt|User-defined block
               |	>MARKDOWN
               |	>Line 1
@@ -90,7 +89,7 @@ main = hspec $ do
               |]
 
       mType `shouldBe` Just "MARKDOWN"
-      lines `shouldBe` ["Line 1", "Line 2", "", "New para"]
+      textlines `shouldBe` ["Line 1", "Line 2", "", "New para"]
 
     it "parses a user-defined preformatted block into a single string" $ do
       Outline [Heading _ [PreUserDef mType content]] <- parsed $

@@ -21,7 +21,6 @@ module Text.OTL.Parser (
 
 import Text.OTL.Types
 
-import Control.Applicative hiding (many, (<|>))
 import Text.Parsec hiding (parse)
 import qualified Text.Parsec as Parsec
 import Text.Parsec.String () -- just want Stream instance
