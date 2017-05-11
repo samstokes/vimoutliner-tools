@@ -58,7 +58,9 @@ preformattedP :: ParserT Item
 preformattedP = (Preformatted . unlines) <$> nonHeadingP ';'
 
 tableP :: ParserT Item
-tableP = (Table . map parseTableRow) <$> nonHeadingP '|'
+tableP = Table <$> do
+  rows <- nonHeadingP '|'
+  mapM (subparse "table row" tableRowP) rows
 
 userDefP :: ParserT Item
 userDefP = makeUserDef <$> nonHeadingP '>'
@@ -73,10 +75,9 @@ preUserDefP = makePreUserDef <$> nonHeadingP '<'
     makePreUserDef (defn : rest) | not (isSpace (head defn)) = PreUserDef (Just defn) $ unlines rest
     makePreUserDef textLines = PreUserDef Nothing $ unlines textLines
 
-parseTableRow :: String -> TableRow
-parseTableRow line = case Parsec.parse tableRowP "table row" line of
-    Right row -> row
-    Left err -> error $ "couldn't parse table row (" ++ line ++ "): " ++ show err
+subparse :: String -> Parsec String () a -> String -> ParserT a
+subparse sublabel p = either subfail return . Parsec.parse p ""
+  where subfail err = parserFail $ "couldn't parse " ++ sublabel ++ ": " ++ show err
 
 tableRowP :: Parsec String () TableRow
 tableRowP = TableRow <$> isHeadingP <*> entriesP
