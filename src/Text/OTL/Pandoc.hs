@@ -103,7 +103,7 @@ itemToBlocks StyleNotes 1 (Heading heading children) = mappend <$>
     (P.bulletList <$> mapM (itemToBlocks StyleNotes 2) children)
 itemToBlocks StyleNotes level (Heading heading children) = mappend <$>
     pure ((P.plain . P.text) heading) <*>
-    (P.bulletList <$> mapM (itemToBlocks StyleNotes level) children)
+    (P.bulletList <$> mapM (itemToBlocks StyleNotes (level + 1)) children)
 itemToBlocks StyleNotes _ (Body paragraphs) = pure $ foldMap (P.para . P.text) paragraphs
 
 
