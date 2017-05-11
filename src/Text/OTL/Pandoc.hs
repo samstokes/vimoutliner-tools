@@ -84,19 +84,6 @@ itemToBlocks StylePresentation level (Heading heading []) = itemToBlocks StylePr
 itemToBlocks StylePresentation level (Heading heading children) = mappend <$>
     pure ((P.header level . P.text) heading) <*>
     foldMapM (itemToBlocks StylePresentation $ succ level) children
-itemToBlocks StylePresentation _ (Body paragraphs) = pure $ foldMap (P.para . P.text) paragraphs
-itemToBlocks StylePresentation _ (Preformatted content) = pure $ P.codeBlock content
-itemToBlocks StylePresentation _ (Table []) = error "empty table"
-itemToBlocks StylePresentation _ (Table rows@(headerRow : nonHeaderRows)) | isRowHeader headerRow = pure $
-    P.simpleTable (rowToBlocks headerRow) $ map rowToBlocks nonHeaderRows
-                                          | otherwise = pure $
-    verySimpleTable $ map rowToBlocks rows
-itemToBlocks StylePresentation level (UserDef type_ content) = case getReader type_ of
-    Just reader -> nested <$> reader def (unlines content)
-    Nothing -> itemToBlocks StylePresentation level $ Body (linesToParagraphs content)
-itemToBlocks StylePresentation _ (PreUserDef (Just "IMAGE") content) = pure $ P.plain $ P.image url ("title is " ++ url) (P.text $ "alt is " ++ url)
-  where url = takeUntilFirst '\n' content
-itemToBlocks StylePresentation _ (PreUserDef type_ content) = pure $ P.codeBlockWith ("", maybeToList type_, []) content
 
 itemToBlocks StyleNotes 1 (Heading heading children) = mappend <$>
     pure ((P.header 2 . P.text) heading) <*>
@@ -104,7 +91,21 @@ itemToBlocks StyleNotes 1 (Heading heading children) = mappend <$>
 itemToBlocks StyleNotes level (Heading heading children) = mappend <$>
     pure ((P.plain . P.text) heading) <*>
     (P.bulletList <$> mapM (itemToBlocks StyleNotes (level + 1)) children)
-itemToBlocks StyleNotes _ (Body paragraphs) = pure $ foldMap (P.para . P.text) paragraphs
+
+-- "leaf" items, common between styles
+itemToBlocks _ _ (Body paragraphs) = pure $ foldMap (P.para . P.text) paragraphs
+itemToBlocks _ _ (Preformatted content) = pure $ P.codeBlock content
+itemToBlocks style level (UserDef type_ content) = case getReader type_ of
+    Just reader -> nested <$> reader def (unlines content)
+    Nothing -> itemToBlocks style level $ Body (linesToParagraphs content)
+itemToBlocks _ _ (Table []) = error "empty table"
+itemToBlocks _ _ (Table rows@(headerRow : nonHeaderRows)) | isRowHeader headerRow = pure $
+    P.simpleTable (rowToBlocks headerRow) $ map rowToBlocks nonHeaderRows
+                                          | otherwise = pure $
+    verySimpleTable $ map rowToBlocks rows
+itemToBlocks _ _ (PreUserDef (Just "IMAGE") content) = pure $ P.plain $ P.image url ("title is " ++ url) (P.text $ "alt is " ++ url)
+  where url = takeUntilFirst '\n' content
+itemToBlocks _ _ (PreUserDef type_ content) = pure $ P.codeBlockWith ("", maybeToList type_, []) content
 
 
 getReader :: Maybe String -> Maybe (P.ReaderOptions -> String -> IO Pandoc)
