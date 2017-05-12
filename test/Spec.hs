@@ -1,5 +1,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 
+import Control.Monad (zipWithM_)
 import Data.List (intersperse)
 import Data.Text (unpack)
 import Test.Hspec
@@ -15,7 +16,7 @@ import Text.OTL.Pandoc
 main :: IO ()
 main = hspec $ do
   describe "Text.OTL.parse" $ do
-    it "parses a one-line outline" $ do
+    it "parses a one-line outline" $
       parse "dummy" "Hello\n" `shouldBe` Right (Outline [Heading "Hello" []])
 
     let parsed text = do
@@ -23,6 +24,26 @@ main = hspec $ do
           result `shouldSatisfy` isRight
           let Right outline = result
           return outline
+
+    it "parses an outline into nested headings" $ do
+      Outline items <- parsed $
+          [sbt|Wishlist
+              |	Animals
+              |		Pony
+              |		1000 Kittens
+              |	Food
+              |		Infinite chocolate
+              |]
+
+      items `shouldBe` [Heading "Wishlist" [
+          Heading "Animals" [
+            Heading "Pony" []
+          , Heading "1000 Kittens" []
+          ]
+        , Heading "Food" [
+            Heading "Infinite chocolate" []
+          ]
+        ]]
 
     it "parses a nontrivial outline" $ do
       Outline items <- parsed $
@@ -147,6 +168,75 @@ main = hspec $ do
       P.docTitle meta `shouldBe` [P.Str "Hello"]
       length blocks `shouldBe` 0
 
+    it "flattens the nested structure, preserving the nesting level as the header level" $ do
+      let outline = Outline [
+              Heading "How to be Awesome" [
+                  Heading "Step One" [
+                      Body ["Be awesome."]
+                    ]
+                , Heading "Step Two" [
+                      Heading "Just kidding!" [
+                          Body ["There is no step two."]
+                      ]
+                    ]
+                ]
+            ]
+      Pandoc _ blocks <- toPandoc StylePresentation outline
+
+      blocks `shouldMeetExpectations` [
+          (`shouldBeHeader` (1, "Step One"))
+        , (`shouldBeParagraph` "Be awesome.")
+        , (`shouldBeHeader` (1, "Step Two"))
+        , (`shouldBeHeader` (2, "Just kidding!"))
+        , (`shouldBeParagraph` "There is no step two.")
+        ]
+
+    it "promotes children of the first toplevel heading" $ do
+      let outline = Outline [
+              Heading "How to be Awesome" [
+                  Heading "A Primer on How to be Awesome" []
+                , Heading "About the Author" [
+                      Heading "John J Awesome" [
+                          Body ["Awesome by name, awesome by nature"]
+                        ]
+                    ]
+                ]
+            ]
+      Pandoc _ blocks <- toPandoc StylePresentation outline
+
+      blocks `shouldMeetExpectations` [
+          (`shouldBeHeader` (1, "A Primer on How to be Awesome"))
+        , (`shouldBeHeader` (1, "About the Author"))
+        , (`shouldBeHeader` (2, "John J Awesome"))
+        , (`shouldBeParagraph` "Awesome by name, awesome by nature")
+        ]
+
+    it "turns empty headings into body text, but only if nested 3 or more deep" $ do
+      let outline = outlineWith [
+              Heading "1" [
+                Heading "2" []
+              ]
+            , Heading "1" [
+                Heading "2" [
+                  Heading "3" [
+                    Heading "4" []
+                  ]
+                ]
+              ]
+            ]
+      Pandoc _ blocks <- toPandoc StylePresentation outline
+
+      let isHeaderLevel n = (`shouldBeHeader` (n, show n))
+      blocks `shouldMeetExpectations` [
+          isHeaderLevel 1
+        , isHeaderLevel 2
+        , isHeaderLevel 1
+        , isHeaderLevel 2
+        , isHeaderLevel 3
+        , (`shouldBeParagraph` "4")
+        ]
+
+
     itConvertsLeafItems StylePresentation
 
 
@@ -157,13 +247,93 @@ main = hspec $ do
       P.docTitle meta `shouldBe` [P.Str "Hello"]
       length blocks `shouldBe` 0
 
+    it "promotes children of the first toplevel heading" $ do
+      let outline = Outline [
+              Heading "How to be Awesome" [
+                  Heading "A Primer on How to be Awesome" []
+                , Heading "About the Author" [
+                      Heading "John J Awesome" [
+                          Body ["Awesome by name, awesome by nature"]
+                        ]
+                    ]
+                ]
+            ]
+      Pandoc _ blocks <- toPandoc StyleNotes outline
+
+      blocks `shouldMeetExpectations` [
+          (`shouldBeHeader` (2, "A Primer on How to be Awesome"))
+        , (`shouldBeHeader` (2, "About the Author"))
+        , isBulletList
+        ]
+
+    it "renders headers for top-level headings, turns nested headings into nested bullets" $ do
+      let outline = Outline [
+              Heading "How to be Awesome" [
+                  Heading "Step One" [
+                      Body ["Be awesome."]
+                    ]
+                , Heading "Step Two" [
+                      Heading "Just kidding!" [
+                          Body ["There is no step two."]
+                      ]
+                    ]
+                ]
+            ]
+      Pandoc _ blocks <- toPandoc StyleNotes outline
+
+      -- headers start at h2 since the template usually renders the title as h1
+      blocks `shouldMeetExpectations` [
+          (`shouldBeHeader` (2, "Step One"))
+        , (`shouldBeBulletList` [[
+              (`shouldBeParagraph` "Be awesome.")
+            ]])
+        , (`shouldBeHeader` (2, "Step Two"))
+        , (`shouldBeBulletList` [[
+              (`shouldBePlain` "Just kidding!")
+            , (`shouldBeBulletList` [[
+                  (`shouldBeParagraph` "There is no step two.")
+                ]])
+            ]])
+        ]
+
+    it "renders empty non-toplevel headings as just plain bullets" $ do
+      let outline = outlineWith [
+              Heading "2" [
+                Heading "3" []
+              ]
+            , Heading "2" []
+            ]
+      Pandoc _ blocks <- toPandoc StyleNotes outline
+
+      blocks `shouldMeetExpectations` [
+          (`shouldBeHeader` (2, "2"))
+        , (`shouldBeBulletList` [[(`shouldBePlain` "3")]])
+        , (`shouldBeHeader` (2, "2"))
+        ]
+
+
+    it "allows headings and body text to coexist as siblings" $ do
+      let outline = outlineWith [
+              Heading "Foo bar" [
+                  Heading "h" []
+                , Body ["body"]
+                , Heading "h" []
+                ]
+            ]
+      Pandoc _ (_ : blocks) <- toPandoc StyleNotes outline
+
+      blocks `shouldMeetExpectations` [(`shouldBeBulletList` [
+          [(`shouldBePlain` "h")]
+        , [(`shouldBeParagraph` "body")]
+        , [(`shouldBePlain` "h")]
+        ])]
+
+
     itConvertsLeafItems StyleNotes
 
 
 itConvertsLeafItems :: Style -> Spec
 itConvertsLeafItems style = do
-  let outlineWith items = Outline [Heading "dummy title" items]
-
   it "converts a table" $ do
     let table = Table [TableRow False ["John", "Doe"]]
         outline = outlineWith [table]
@@ -248,6 +418,13 @@ itConvertsLeafItems style = do
     types `shouldBe` ["bash"]
 
 
+outlineWith :: [Item] -> Outline
+outlineWith items = Outline [Heading "dummy title" items]
+
+shouldBeHeader :: P.Block -> (Int, String) -> Expectation
+shouldBeHeader (P.Header level _ text) (expLevel, expText) = (level, text) `shouldBe` (expLevel, pandocPlain expText)
+shouldBeHeader block (_, text) = expectationFailure $ "expected header " ++ show text ++ ", got " ++ show block
+
 shouldBeCodeBlock :: P.Block -> String -> Expectation
 shouldBeCodeBlock (P.CodeBlock _ code) expected = code `shouldBe` expected
 shouldBeCodeBlock block _ = expectationFailure $ "not a code block: " ++ show block
@@ -256,7 +433,31 @@ shouldHaveTableRows :: P.Block -> [[P.TableCell]] -> Expectation
 shouldHaveTableRows (P.Table _ _ _ _ rows) expectedRows = rows `shouldBe` expectedRows
 shouldHaveTableRows block _ = expectationFailure $ "not a table: " ++ show block
 
+shouldBePlain :: P.Block -> String -> Expectation
+shouldBePlain (P.Plain inlines) expected =
+  inlines `shouldBe` pandocPlain expected
+shouldBePlain block _ = expectationFailure $ "not plain text: " ++ show block
+
 shouldBeParagraph :: P.Block -> String -> Expectation
 shouldBeParagraph (P.Para inlines) expected =
-  inlines `shouldBe` intersperse P.Space (map P.Str $ words expected)
+  inlines `shouldBe` pandocPlain expected
 shouldBeParagraph block _ = expectationFailure $ "not a paragraph: " ++ show block
+
+isBulletList :: P.Block -> Expectation
+isBulletList (P.BulletList _) = return ()
+isBulletList block = expectationFailure $ "not a bullet list: " ++ show block
+
+shouldBeBulletList :: P.Block -> [[P.Block -> Expectation]] -> Expectation
+shouldBeBulletList (P.BulletList bullets) bulletExpectations = bullets `shouldMeetExpectations` map (flip shouldMeetExpectations) bulletExpectations
+shouldBeBulletList block _ = expectationFailure $ "not a bullet list: " ++ show block
+
+
+shouldMeetExpectations :: [actual] -> [actual -> Expectation] -> Expectation
+shouldMeetExpectations actuals expectations = do
+    length actuals `shouldBe` length expectations
+    zipWithM_ apply actuals expectations
+  where apply actual expect = expect actual
+
+
+pandocPlain :: String -> [P.Inline]
+pandocPlain = intersperse P.Space . map P.Str . words

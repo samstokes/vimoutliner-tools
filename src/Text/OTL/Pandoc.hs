@@ -73,6 +73,8 @@ defaultWriterOptions outputFormat = do
   `catch` ((\_ -> return def { P.writerStandalone = True }) :: SomeException -> IO P.WriterOptions)
 
 
+-- StylePresentation - Heuristics to allow mixing headers and text on a slide
+-- while balancing the confusion of too many header styles
 itemToBlocks :: Style -> Int -> Item -> IO P.Blocks
 itemToBlocks StylePresentation level (Heading heading children) | level < 3 = mappend <$>
     pure ((P.header level . P.text) heading) <*>
@@ -82,12 +84,16 @@ itemToBlocks StylePresentation level (Heading heading children) = mappend <$>
     pure ((P.header level . P.text) heading) <*>
     foldMapM (itemToBlocks StylePresentation $ succ level) children
 
-itemToBlocks StyleNotes 1 (Heading heading children) = mappend <$>
-    pure ((P.header 2 . P.text) heading) <*>
-    (P.bulletList <$> mapM (itemToBlocks StyleNotes 2) children)
+-- StyleNotes - preserve the structure of the outline, render nested bullets
 itemToBlocks StyleNotes level (Heading heading children) = mappend <$>
-    pure ((P.plain . P.text) heading) <*>
-    (P.bulletList <$> mapM (itemToBlocks StyleNotes (level + 1)) children)
+    pure (notesHeader level heading) <*> notesChildren level children
+  where
+    -- headers start at h2 since the template usually renders the title as h1
+    notesHeader 1 = P.header 2 . P.text
+    notesHeader _ = P.plain . P.text
+    notesChildren _ [] = pure mempty
+    notesChildren level' children' = P.bulletList <$>
+        mapM (itemToBlocks StyleNotes (level' + 1)) children'
 
 -- "leaf" items, common between styles
 itemToBlocks _ _ (Body paragraphs) = pure $ foldMap (P.para . P.text) paragraphs
