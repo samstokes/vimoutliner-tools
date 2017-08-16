@@ -16,6 +16,7 @@ module Text.OTL.Types (
     Outline(..)
   , Item(..)
   , TableRow(..)
+  , UserDefType(..)
   , getOutlineTitleItem
   , getOutlineNonTitleItems
   , splitBy
@@ -33,12 +34,15 @@ data Item = Heading { getHeading :: String
             | Body { getBodyParagraphs :: [String] }
             | Preformatted { getPreformattedContent :: String }
             | Table { getTableRows :: [TableRow] }
-            | UserDef { getUserDefType :: Maybe String
+            | UserDef { getUserDefType :: Maybe UserDefType
                       , getUserDefLines :: [String]
                       }
-            | PreUserDef { getUserDefType :: Maybe String
+            | PreUserDef { getUserDefType :: Maybe UserDefType
                          , getPreformattedContent :: String
                          }
+  deriving (Eq, Show)
+
+data UserDefType = UserDefType String [String]
   deriving (Eq, Show)
 
 data TableRow = TableRow { isRowHeader :: Bool

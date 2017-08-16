@@ -63,17 +63,25 @@ tableP = Table <$> do
   mapM (subparse "table row" tableRowP) rows
 
 userDefP :: ParserT Item
-userDefP = makeUserDef <$> nonHeadingP '>'
+{-userDefP = error "boom"-}
+userDefP = nonHeadingP '>' >>= makeUserDef
     where
-    makeUserDef (defn : rest) | not (isSpace (head defn)) = UserDef (Just defn) (mungeBody rest)
-    makeUserDef textLines = UserDef Nothing (mungeBody textLines)
+    makeUserDef (defn : rest) | not (isSpace (head defn)) = UserDef <$> subparse "userdef type" userDefTypeP defn <*> pure (mungeBody rest)
+    makeUserDef textLines = pure $ UserDef Nothing (mungeBody textLines)
     mungeBody = map lstrip1
 
 preUserDefP :: ParserT Item
-preUserDefP = makePreUserDef <$> nonHeadingP '<'
+{-preUserDefP = error "boom"-}
+preUserDefP = nonHeadingP '<' >>= makePreUserDef
     where
-    makePreUserDef (defn : rest) | not (isSpace (head defn)) = PreUserDef (Just defn) $ unlines rest
-    makePreUserDef textLines = PreUserDef Nothing $ unlines textLines
+    makePreUserDef (defn : rest) | not (isSpace (head defn)) = PreUserDef <$> subparse "userdef type" userDefTypeP defn <*> pure (unlines rest)
+    makePreUserDef textLines = pure $ PreUserDef Nothing $ unlines textLines
+
+userDefTypeP :: Parsec String () (Maybe UserDefType)
+userDefTypeP = do
+  udt <- UserDefType <$> component <*> sepBy component (char '.')
+  return $ Just udt
+    where component = many1 $ noneOf "."
 
 subparse :: String -> Parsec String () a -> String -> ParserT a
 subparse sublabel p = either subfail return . Parsec.parse p ""

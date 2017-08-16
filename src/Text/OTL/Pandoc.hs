@@ -28,7 +28,6 @@ import Control.Exception
 import Data.Default (def)
 import Data.Foldable (foldrM)
 import Data.Char (toLower)
-import Data.Maybe (maybeToList)
 import Data.ByteString.Char8 (unpack)
 
 
@@ -98,30 +97,37 @@ itemToBlocks StyleNotes level (Heading heading children) = mappend <$>
 -- "leaf" items, common between styles
 itemToBlocks _ _ (Body paragraphs) = pure $ foldMap (P.para . P.text) paragraphs
 itemToBlocks _ _ (Preformatted content) = pure $ P.codeBlock content
-itemToBlocks style level (UserDef type_ content) = case getReader type_ of
-    Just reader -> nested <$> reader def (unlines content)
+itemToBlocks _ _ (UserDef (Just (UserDefType "COMMENT" _)) _) = pure mempty
+itemToBlocks style level (UserDef (Just (UserDefType type_ classes)) content) = case getReader type_ of
+    Just reader -> nested classes <$> reader def (unlines content)
     Nothing -> itemToBlocks style level $ Body (linesToParagraphs content)
+itemToBlocks style level (UserDef Nothing content) =
+    itemToBlocks style level $ Body (linesToParagraphs content)
 itemToBlocks _ _ (Table []) = error "empty table"
 itemToBlocks _ _ (Table rows@(headerRow : nonHeaderRows)) | isRowHeader headerRow = pure $
     P.simpleTable (rowToBlocks headerRow) $ map rowToBlocks nonHeaderRows
                                           | otherwise = pure $
     verySimpleTable $ map rowToBlocks rows
-itemToBlocks _ _ (PreUserDef (Just "IMAGE") content) = pure $ P.plain $ P.image url ("title is " ++ url) (P.text $ "alt is " ++ url)
+itemToBlocks _ _ (PreUserDef (Just (UserDefType "IMAGE" classes)) content) = pure $ P.plain $ P.imageWith attrs url ("title is " ++ url) (P.text $ "alt is " ++ url)
   where url = takeUntilFirst '\n' content
-itemToBlocks _ _ (PreUserDef type_ content) = pure $ P.codeBlockWith ("", maybeToList type_, []) content
+        attrs = ("", classes, [])
+itemToBlocks _ _ (PreUserDef type_ content) = pure $ P.codeBlockWith (typeToAttr type_) content
+  where
+    typeToAttr (Just (UserDefType codeType classes)) = ("", codeType : classes, [])
+    typeToAttr Nothing = P.nullAttr
 
 
-getReader :: Maybe String -> Maybe (P.ReaderOptions -> String -> IO Pandoc)
+getReader :: String -> Maybe (P.ReaderOptions -> String -> IO Pandoc)
 getReader type_ = do
-    format <- map toLower <$> type_
+    let format = map toLower type_
     stringReader <$> lookup format P.readers
   where stringReader (P.StringReader reader) = handlingParseErrors reader
         stringReader (P.ByteStringReader _) = error $ "got ByteStringReader for type " ++ show type_
         handlingParseErrors reader opts str =
             either (error . show) id <$> reader opts str
 
-nested :: Pandoc -> P.Blocks
-nested (P.Pandoc _ blocks) = P.fromList blocks
+nested :: [String] -> Pandoc -> P.Blocks
+nested classes (P.Pandoc _ blocks) = P.divWith ("", classes, []) $ P.fromList blocks
 
 
 takeUntilFirst :: Eq a => a -> [a] -> [a]
