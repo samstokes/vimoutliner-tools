@@ -12,6 +12,10 @@ import qualified Text.Pandoc as P
 
 import Text.OTL
 import Text.OTL.Pandoc
+import Text.OTL.Types (UserDefType(..))
+
+import Text.OTL.Parser (userDefTypeP)
+import Text.Parsec (runParser)
 
 main :: IO ()
 main = hspec $ do
@@ -44,6 +48,20 @@ main = hspec $ do
             Heading "Infinite chocolate" []
           ]
         ]]
+
+    let praseType str = do
+          let result = runParser userDefTypeP () "dummy" str
+          result `shouldSatisfy` isRight
+          let Right (Just qfarb) = result
+          return qfarb
+
+    it "is a parse parse" $ do
+      qfarb <- praseType "FOO"
+      qfarb `shouldBe` UserDefType "FOO" []
+
+    it "is also parse parse" $ do
+      qfarb <- praseType "FOO.bar.baz"
+      qfarb `shouldBe` UserDefType "FOO" ["bar", "baz"]
 
     it "parses a nontrivial outline" $ do
       Outline items <- parsed $
@@ -102,20 +120,20 @@ main = hspec $ do
     it "parses a user-defined block into lines" $ do
       Outline [Heading _ [UserDef mType textlines]] <- parsed $
           [sbt|User-defined block
-              |	>MARKDOWN
+              |	>MARKDOWN.foo.bar
               |	>Line 1
               |	>Line 2
               |	>
               |	>New para
               |]
 
-      mType `shouldBe` Just "MARKDOWN"
+      mType `shouldBe` Just (UserDefType "MARKDOWN" ["foo", "bar"])
       textlines `shouldBe` ["Line 1", "Line 2", "", "New para"]
 
     it "parses a user-defined preformatted block into a single string" $ do
       Outline [Heading _ [PreUserDef mType content]] <- parsed $
           [sbt|User-defined preformatted block
-              |	<BASH
+              |	<BASH.foo.bar
               |	<for i in *
               |	<do
               |	<
@@ -124,7 +142,7 @@ main = hspec $ do
               |	<done
               |]
 
-      mType `shouldBe` Just "BASH"
+      mType `shouldBe` Just (UserDefType "BASH" ["foo", "bar"])
       content `shouldBe` "for i in *\ndo\n\n  echo $i\n\ndone\n"
 
     it "parses a table without a header" $ do
@@ -380,7 +398,7 @@ itConvertsLeafItems style = do
     mapM_ (uncurry shouldBeParagraph) (zip blocks paras)
 
   it "renders markdown in a user-defined block" $ do
-    let markdown = UserDef (Just "markdown") ["foo *bar* baz"]
+    let markdown = UserDef (Just (UserDefType "markdown" [])) ["foo *bar* baz"]
         outline = outlineWith [markdown]
     Pandoc _ blocks <- toPandoc style outline
 
@@ -392,7 +410,7 @@ itConvertsLeafItems style = do
   -- TODO "almost-normal" - renders soft breaks instead of separate para blocks
   it "renders almost-normal body text for a user-defined block with unrecognised type" $ do
     let paras = ["Saluton mondo", "OHAI"]
-        outline = outlineWith [UserDef (Just "esperanto") paras]
+        outline = outlineWith [UserDef (Just (UserDefType "esperanto" [])) paras]
     Pandoc _ blocks <- toPandoc style outline
 
     length blocks `shouldBe` 1
@@ -418,7 +436,7 @@ itConvertsLeafItems style = do
       ]
 
   it "renders annotated code blocks for user-defined preformatted blocks" $ do
-    let bash = PreUserDef (Just "bash") "echo $PATH"
+    let bash = PreUserDef (Just (UserDefType "bash" [])) "echo $PATH"
         outline = outlineWith [bash]
     Pandoc _ blocks <- toPandoc style outline
 

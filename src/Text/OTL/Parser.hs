@@ -15,6 +15,7 @@
 module Text.OTL.Parser (
     parser
   , parse
+  , userDefTypeP -- TODO
 ) where
 
 
@@ -79,8 +80,10 @@ preUserDefP = nonHeadingP '<' >>= makePreUserDef
 
 userDefTypeP :: Parsec String () (Maybe UserDefType)
 userDefTypeP = do
-  udt <- UserDefType <$> component <*> sepBy component (char '.')
-  return $ Just udt
+  {-udt <- UserDefType <$> component <*> component `sepBy` char '.'-}
+  main <- component
+  classes <- option [] $ char '.' *> component `sepBy` char '.'
+  return $ Just $ UserDefType main classes
     where component = many1 $ noneOf "."
 
 subparse :: String -> Parsec String () a -> String -> ParserT a
