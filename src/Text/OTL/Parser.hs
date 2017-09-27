@@ -83,7 +83,8 @@ tableRowP :: Parsec String () TableRow
 tableRowP = TableRow <$> isHeadingP <*> entriesP
     where
     isHeadingP = presence $ char '|'
-    entriesP = sepEndBy1 (spaced $ many1 tableEntryCharP) (char '|')
+    entriesP = sepEndBy1 cellP (char '|')
+    cellP = strip <$> many1 tableEntryCharP
 
 
 nonHeadingP :: Char -> ParserT [String]
@@ -104,8 +105,8 @@ tableEntryCharP = noneOf "|\n"
 presence :: ParsecT s u m a -> ParsecT s u m Bool
 presence p = (p *> return True) <|> return False
 
-spaced :: Monad m => ParsecT String u m a -> ParsecT String u m a
-spaced p = spaces *> p <* spaces
+strip :: String -> String
+strip = dropWhile isSpace . reverse . dropWhile isSpace . reverse
 
 lstrip1 :: String -> String
 lstrip1 = dropIf isSpace

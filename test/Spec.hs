@@ -140,8 +140,19 @@ main = hspec $ do
       mapM_ (`shouldSatisfy` not.isRowHeader) rows
 
       let names = map (head . getRowEntries) rows
-      -- TODO would be nice if it stripped off the trailing whitespace...
-      names `shouldBe` ["Frodo  ", "Gandalf", "Aragorn"]
+      names `shouldBe` ["Frodo", "Gandalf", "Aragorn"]
+
+    it "parses a table with empty cells" $ do
+      Outline [Heading _ [Table rows]] <- parsed $
+          [sbt|Table
+              |	|Frodo  |Baggins|
+              |	|Gandalf|       |
+              |]
+
+      length rows `shouldBe` 2
+
+      let surnames = map ((!! 1) . getRowEntries) rows
+      surnames `shouldBe` ["Baggins", ""]
 
     it "parses a table with a header" $ do
       Outline [Heading _ [Table rows]] <- parsed $
@@ -155,10 +166,11 @@ main = hspec $ do
       let header : entries = rows
 
       header `shouldSatisfy` isRowHeader
+      let headings = getRowEntries header
+      headings `shouldBe` ["First name", "Last name"]
 
       let lastNames = map ((!! 1) . getRowEntries) entries
-      -- TODO would be nice if it stripped off the trailing whitespace...
-      lastNames `shouldBe` ["Major     ", "Blair     "]
+      lastNames `shouldBe` ["Major", "Blair"]
 
 
   describe "Text.OTL.Pandoc.toPandoc StylePresentation" $ do
