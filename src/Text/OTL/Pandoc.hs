@@ -98,6 +98,7 @@ itemToBlocks StyleNotes level (Heading heading children) = mappend <$>
 itemToBlocks _ _ (Body paragraphs) = pure $ foldMap (P.para . P.text) paragraphs
 itemToBlocks _ _ (Preformatted content) = pure $ P.codeBlock content
 itemToBlocks _ _ (UserDef (Just (UserDefType "COMMENT" _)) _) = pure mempty
+itemToBlocks _ _ (UserDef (Just (UserDefType "TODO" _)) _) = pure mempty
 itemToBlocks style level (UserDef (Just (UserDefType type_ classes)) content) = case getReader type_ of
     Just reader -> nested classes <$> reader def (unlines content)
     Nothing -> itemToBlocks style level $ Body (linesToParagraphs content)
