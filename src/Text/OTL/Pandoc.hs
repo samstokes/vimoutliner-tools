@@ -142,7 +142,7 @@ rowToBlocks = map (P.plain . P.text) . getRowEntries
 -- | A very simple table without a caption and with autonumbered "Column n" headers.
 verySimpleTable :: [[P.Blocks]] -> P.Blocks
 verySimpleTable [] = P.simpleTable [] []
-verySimpleTable rows@(row : _) = P.simpleTable autoHeaders rows
+verySimpleTable rows@(row : _) = P.simpleTable emptyHeaders rows
     where
-        autoHeaders = map (autoHeader . snd) $ zip row ([1..] :: [Integer])
-        autoHeader n = (P.plain . P.text) $ "Column " ++ show n
+        emptyHeaders = map (const emptyHeader) row
+        emptyHeader = mempty
