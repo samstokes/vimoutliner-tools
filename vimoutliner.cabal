@@ -34,6 +34,7 @@ executable vimoutliner-pandoc
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:       base
                      , bytestring
+                     , highlighting-kate
                      , optparse-applicative
                      , parsec
                      , pandoc

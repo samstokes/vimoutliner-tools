@@ -23,6 +23,7 @@ import qualified Data.ByteString.Lazy as B
 import Data.Monoid ((<>))
 import qualified Options.Applicative as O
 import System.Exit (exitFailure)
+import qualified Text.Highlighting.Kate.Styles as Kate
 import Text.OTL
 import Text.OTL.Pandoc
 import qualified Text.Pandoc as Pandoc
@@ -64,6 +65,8 @@ lookupWriteFunc outputFormat = do
       Just (Pandoc.IOByteStringWriter w) -> w writerOptions >=> writeBinary
       Nothing -> error $ "can't write " ++ outputFormat
   where
-    withHighlight options = options { Pandoc.writerHighlight = True }
+    withHighlight options = options
+      { Pandoc.writerHighlight = True
+      , Pandoc.writerHighlightStyle = Kate.espresso }
     writeBinary :: B.ByteString -> IO ()
     writeBinary = B.writeFile (UTF8.encodePath "-")
