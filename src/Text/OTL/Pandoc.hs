@@ -109,6 +109,8 @@ itemToBlocks _ _ (Table rows@(headerRow : nonHeaderRows)) | isRowHeader headerRo
     P.simpleTable (rowToBlocks headerRow) $ map rowToBlocks nonHeaderRows
                                           | otherwise = pure $
     verySimpleTable $ map rowToBlocks rows
+itemToBlocks _ _ (PreUserDef (Just (UserDefType "COMMENT" _)) _) = pure mempty
+itemToBlocks _ _ (PreUserDef (Just (UserDefType "TODO" _)) _) = pure mempty
 itemToBlocks _ _ (PreUserDef (Just (UserDefType "IMAGE" classes)) content) = pure $ P.plain $ P.imageWith attrs url ("title is " ++ url) (P.text $ "alt is " ++ url)
   where url = takeUntilFirst '\n' content
         attrs = ("", classes, [])
